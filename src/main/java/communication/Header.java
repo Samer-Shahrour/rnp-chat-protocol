@@ -1,28 +1,37 @@
 package communication;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Header {
-    public byte msg_type;
-    public byte ttl;
-    public short size;
-    public int sender_ip;
-    public int destination_ip;
-    public short sender_port;
-    public short destination_port;
-    public int checksum;
+    public byte MSG_TYPE;
+    public byte TTL;
+    public short SIZE;
+    public int SENDER_IP;
+    public int DESTINATION_IP;
+    public short SENDER_PORT;
+    public short DESTINATION_PORT;
+    public int CHECKSUM;
+
+
 
     @Override
     public String toString(){
         return "HEADER{\n"
-                + "        " + "msg_type: " + msg_type + "\n"
-                + "        " + "ttl: " + ttl + "\n"
-                + "        " + "size: " + size + "\n"
-                + "        " + "sender_ip: " + sender_ip + "\n"
-                + "        " + "destination_ip: " + destination_ip + "\n"
-                + "        " + "sender_port: " + sender_port + "\n"
-                + "        " + "destination_port: " + destination_port + "\n"
-                + "        " + "checksum: " + checksum + "\n"
+                + "        " + "msg_type: " + MSG_TYPE + "\n"
+                + "        " + "ttl: " + TTL + "\n"
+                + "        " + "size: " + SIZE + "\n"
+                + "        " + "sender_ip: " + SENDER_IP + "\n"
+                + "        " + "destination_ip: " + DESTINATION_IP + "\n"
+                + "        " + "sender_port: " + SENDER_PORT + "\n"
+                + "        " + "destination_port: " + DESTINATION_PORT + "\n"
+                + "        " + "checksum: " + CHECKSUM + "\n"
                 + "        " + "}";
     }
 
@@ -38,7 +47,7 @@ public class Header {
             }
 
 
-            destination_ip = ipNumber;
+            DESTINATION_IP = ipNumber;
 
         } catch (UnknownHostException e) {
             System.out.println("Invalid IP address: " + ip);
@@ -57,7 +66,7 @@ public class Header {
             }
 
 
-            sender_ip = ipNumber;
+            SENDER_IP = ipNumber;
 
         } catch (UnknownHostException e) {
             System.out.println("Invalid IP address: " + ip);

@@ -1,12 +1,18 @@
 package communication;
 
-public class Body {
-    public String msg;
+import java.util.List;
 
-    @Override
-    public String toString() {
-        return "BODY{\n"
-                + "        " + "msg: \"" + msg + "\"\n"
-                + "        " + '}';
+public class Body {
+    public List<Link> get_routing_information(){
+        return null;
+    }
+    public int get_msg_id(){
+        return -1;
+    }
+    public String get_msg_text(){
+        return null;
+    }
+    public int get_error_code(){
+        return -1;
     }
 }
