@@ -19,7 +19,7 @@ public class TestSimpleSendText {
                 1
         );
         rtc.add(l);
-        TextClient tc = new TextClient(rtc);
+        TextClient tc = new TextClient(rtc, IPString.int_from_string("127.0.0.2"));
 
         List<Link> rts = new ArrayList<>();
         Server s = new Server(rts, "127.0.0.1");

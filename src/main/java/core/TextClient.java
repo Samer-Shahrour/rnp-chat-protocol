@@ -14,15 +14,17 @@ import java.util.List;
 public class TextClient {
     int port;
     List<Link> routing_table;
+    private final int own_ip;
 
-    public TextClient(List<Link> rt){
-        this(rt, 8080);
+    public TextClient(List<Link> rt, int ip){
+        this(rt, 8080, ip);
 
     }
 
-    public TextClient(List<Link>rt ,int port){
+    public TextClient(List<Link>rt, int port, int ip){
         this.routing_table = rt;
         this.port = port;
+        this.own_ip = ip;
     }
 
     public void send_to(String destination_ip, String txt){
@@ -36,6 +38,7 @@ public class TextClient {
                     Header h = Header.TEXTHEADER;
                     h.SIZE = (short) txt.length();
                     h.set_destination_ip(destination_ip);
+                    h.SENDER_IP = own_ip;
 
                     Body b = new TextBody(txt);
                     Message m = new Message(h, b);

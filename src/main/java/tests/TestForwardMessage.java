@@ -32,7 +32,7 @@ public class TestForwardMessage {
                 IPString.int_from_string("127.0.0.2"),
                 1);
         rt3.add(l2);
-        TextClient sender = new TextClient(rt3);
+        TextClient sender = new TextClient(rt3, IPString.int_from_string("127.0.0.1"));
         sender.send_to("127.0.0.3", "hello world");
     }
 }

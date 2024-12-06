@@ -12,13 +12,16 @@ import java.util.List;
 public class RoutingClient implements Runnable {
     int port;
     List<Link> routing_table;
+    private final int own_ip;
 
-    public RoutingClient(List<Link> rt){
+    public RoutingClient(List<Link> rt, int ip){
         port = 8080;
         routing_table = rt;
+        own_ip = ip;
     }
 
     public boolean initiate_connection(String destination_ip){
+
         try{
             Socket socket = new Socket(destination_ip, port);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -27,6 +30,7 @@ public class RoutingClient implements Runnable {
             Header h = Header.ROUTING;
             h.SIZE = (short) routing_table.size();
             h.set_destination_ip(destination_ip);
+            h.SENDER_IP = own_ip;
 
             Body b = new RoutingBody(routing_table);
             Message m = new Message(h, b);
@@ -41,28 +45,40 @@ public class RoutingClient implements Runnable {
 
     @Override
     public void run(){
-        for (Link link : routing_table) {
-            if(link.getHOP_COUNT() == 0) continue;
 
-            String destination_ip = IPString.string_from_int(link.getDESTINATION());
-            try{
-                Socket socket = new Socket(destination_ip, port);
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                Gson gson = new Gson();
+        while(true){
+            for (Link link : routing_table) {
+                if(link.getHOP_COUNT() == 0) continue;
 
-                Header h = Header.ROUTING;
-                h.SIZE = (short) routing_table.size();
-                h.set_destination_ip(destination_ip);
+                String destination_ip = IPString.string_from_int(link.getDESTINATION());
+                try{
+                    Socket socket = new Socket(destination_ip, port);
+                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                    Gson gson = new Gson();
 
-                Body b = new RoutingBody(routing_table);
-                Message m = new Message(h, b);
+                    Header h = Header.ROUTING;
+                    h.SIZE = (short) routing_table.size();
+                    h.set_destination_ip(destination_ip);
+                    h.SENDER_IP = own_ip;
 
-                out.println(gson.toJson(m));
+                    Body b = new RoutingBody(routing_table);
+                    Message m = new Message(h, b);
 
-            }  catch (IOException e) {
-                System.err.println("could not connect to " + destination_ip);
+                    out.println(gson.toJson(m));
+
+                }  catch (IOException e) {
+                    System.err.println("could not connect to " + destination_ip);
+                }
+
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
         }
+
     }
 }

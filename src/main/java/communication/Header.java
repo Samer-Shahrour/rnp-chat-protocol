@@ -11,7 +11,7 @@ public class Header {
 
     //TODO: PORTS, CHECKSUM
 
-    private static int own_ip;
+    public static int own_ip;
 
     public byte MSG_TYPE;
     public byte TTL;
@@ -25,9 +25,7 @@ public class Header {
     public static final Header TEXTHEADER = create_text_header();
     public static final Header ROUTING = create_routing_header();
 
-    public static void set_own_ip(int ip){
-        own_ip = ip;
-    }
+
 
     public Header(byte msgType, byte ttl, short size, int senderIp, int destinationIp, short senderPort, short destinationPort) {
         this.MSG_TYPE = msgType;
@@ -41,9 +39,6 @@ public class Header {
     }
 
     private static Header create_text_header() {
-        if (own_ip == 0){
-            own_ip = IPString.int_from_string("127.0.0.1");
-        }
 
         return new Header(
                 (byte) 0,
@@ -57,9 +52,6 @@ public class Header {
     }
 
     private static Header create_routing_header() {
-        if (own_ip == 0){
-            own_ip = IPString.int_from_string("127.0.0.1");
-        }
 
         return new Header(
                 (byte) 1,

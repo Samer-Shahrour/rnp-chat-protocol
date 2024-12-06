@@ -57,14 +57,14 @@ public class Server implements Runnable {
             try {
                 Socket clientSocket = socket.accept();
                 System.out.println("SERVER Connected to client: " + clientSocket.getInetAddress().toString());
-                executor.submit(() -> handleClient(clientSocket));
+                executor.submit(() -> handle_client(clientSocket));
             } catch (IOException e) {
                 System.out.println("Error accepting client connection: " + e.getMessage());
             }
         }
     }
 
-    private void handleClient(Socket clientSocket) {
+    private void handle_client(Socket clientSocket) {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())))
         {
             String inputLine;
@@ -127,7 +127,6 @@ public class Server implements Runnable {
                     Socket s = new Socket(IPString.string_from_int(link.getGATEWAY()), 8080);
                     PrintWriter out = new PrintWriter(s.getOutputStream(), true);
                     message.getJSONObject("HEADER").put("TTL", message.getJSONObject("HEADER").getInt("TTL")-1);
-                    Gson gson = new Gson();
                     out.println(message.toString());
                     return;
                 } catch (IOException e) {
@@ -151,12 +150,13 @@ public class Server implements Runnable {
 
     private void handle_routing_information(JSONObject message) {
         JSONArray rt = message.getJSONObject("BODY").getJSONArray("ROUTING_TABLE");
+        int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
 
         for (int i = 0; i < rt.length(); i++) {
 
             Link l = new Link(rt.getJSONObject(i).getInt("DESTINATION"),
                     rt.getJSONObject(i).getInt("NETMASK"),
-                    rt.getJSONObject(i).getInt("GATEWAY"),
+                    sender,
                     rt.getJSONObject(i).getInt("HOP_COUNT")
             );
 
