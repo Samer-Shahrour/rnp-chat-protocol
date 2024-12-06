@@ -17,17 +17,16 @@ public class Server implements Runnable {
     private int port;
     private ServerSocket socket;
     private List<Link> routing_table;
-    private ExecutorService executor;
     private final int own_ip;
 
     public Server(List<Link> rt, int ip) {
         routing_table = rt;
         port = 8080;  //default
         own_ip = ip;
-        executor = Executors.newFixedThreadPool(5);
         try {
 
             socket = new ServerSocket(port);
+            socket.setReuseAddress(true);
             System.out.println("SERVER started on port " + port);
 
         } catch (IOException e) {
@@ -38,10 +37,10 @@ public class Server implements Runnable {
     public Server(List<Link> rt, String own_ip) {
         routing_table = rt;
         port = 8080;  //default
-        this.own_ip = IPString.string_to_ip(own_ip);
-        executor = Executors.newFixedThreadPool(5);
+        this.own_ip = IPString.int_from_string(own_ip);
         try {
             socket = new ServerSocket(port, 1, InetAddress.getByName(own_ip));
+            socket.setReuseAddress(true);
             System.out.println("SERVER started on port " + port);
 
         } catch (IOException e) {
@@ -52,33 +51,52 @@ public class Server implements Runnable {
 
     @Override
     public void run() {
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
         while (true) {
-            try (Socket clientSocket = socket.accept()) {
-                System.out.println("SERVER Connected to client");
-
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    JSONObject m = new JSONObject(inputLine);
-                    executor.submit(()-> {handle_message(m);});
-                }
-
+            try {
+                Socket clientSocket = socket.accept();
+                System.out.println("SERVER Connected to client: " + clientSocket.getInetAddress().toString());
+                executor.submit(() -> handleClient(clientSocket));
             } catch (IOException e) {
-                System.out.println("Exception caught when trying to listen on port " + port + " or listening for a connection");
-                System.out.println(e.getMessage());
+                System.out.println("Error accepting client connection: " + e.getMessage());
+            }
+        }
+    }
+
+    private void handleClient(Socket clientSocket) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())))
+        {
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                JSONObject m = new JSONObject(inputLine);
+                handle_message(m);
+            }
+        } catch (IOException e) {
+            System.out.println("Error handling client: " + e.getMessage());
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                System.out.println("Error closing client socket: " + e.getMessage());
             }
         }
     }
 
     private void handle_message(JSONObject m) {
+
         switch (m.getJSONObject("HEADER").getInt("MSG_TYPE")) {
             case 0:
                 handle_text_message(m);
                 break;
             case 1:
                 handle_routing_information(m);
+                break;
+            case 2:
+                handle_acknowledge(m);
+                break;
+            case 3:
+                handle_not_acknowledge(m);
                 break;
         }
 
@@ -90,8 +108,14 @@ public class Server implements Runnable {
         //message for me
         if(destination == own_ip) {
             String text = message.getJSONObject("BODY").getString("TEXT");
-            System.out.println("SERVER " + IPString.ip_to_string(own_ip) + " received Message: \n"
+            System.out.println("SERVER " + IPString.string_from_int(own_ip) + " received Message: \n"
                     + "  " + text);
+            return;
+        }
+
+        if(message.getJSONObject("HEADER").getInt("TTL") <= 0){
+            System.out.println("SERVER " + IPString.string_from_int(own_ip) + " received Dead Message: \n");
+            //TODO
             return;
         }
 
@@ -99,9 +123,10 @@ public class Server implements Runnable {
         for(Link link : routing_table){
             if(link.getDESTINATION() == destination){
                 try{
-                    System.out.println("SERVER " + IPString.ip_to_string(own_ip) + " forwarding Message to " + IPString.ip_to_string(link.getGATEWAY()));
-                    Socket s = new Socket(IPString.ip_to_string(link.getGATEWAY()), 8080);
+                    System.out.println("SERVER " + IPString.string_from_int(own_ip) + " forwarding Message to " + IPString.string_from_int(link.getGATEWAY()));
+                    Socket s = new Socket(IPString.string_from_int(link.getGATEWAY()), 8080);
                     PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+                    message.getJSONObject("HEADER").put("TTL", message.getJSONObject("HEADER").getInt("TTL")-1);
                     Gson gson = new Gson();
                     out.println(message.toString());
                     return;
@@ -112,7 +137,15 @@ public class Server implements Runnable {
             }
         }
 
-        System.out.println("SERVER " + IPString.ip_to_string(own_ip) + " received Lost Message: \n");
+        System.out.println("SERVER " + IPString.string_from_int(own_ip) + " received Lost Message: \n");
+        //TODO
+    }
+
+    private void handle_acknowledge(JSONObject message) {
+        //TODO
+    }
+
+    private void handle_not_acknowledge(JSONObject message) {
         //TODO
     }
 
@@ -145,17 +178,13 @@ public class Server implements Runnable {
                     break;
                 }
             }
-
-
             if (!found) {
                 l.incrementHopCount();
                 routing_table.add(l);
-                System.out.println("SERVER received connection: " + IPString.ip_to_string(l.getDESTINATION()));
+                System.out.println("SERVER received connection: " + IPString.string_from_int(l.getDESTINATION()));
             }
-
-
         }
-        System.out.println(routing_table);
+
     }
 }
 

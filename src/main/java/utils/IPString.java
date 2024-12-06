@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class IPString {
-    public static int string_to_ip(String ip){
+    public static int int_from_string(String ip){
         try {
             InetAddress inetAddress = InetAddress.getByName(ip);
 
@@ -14,18 +14,15 @@ public class IPString {
             for (int i = 0; i < ipBytes.length; i++) {
                 ipNumber |= ((ipBytes[i] & 0xFF) << (8 * (3 - i)));
             }
-
-
             return ipNumber;
 
         } catch (UnknownHostException e) {
-
             System.out.println("Invalid IP address: " + ip);
             return -1;
         }
     }
 
-    public static String ip_to_string(int ip){
+    public static String string_from_int(int ip){
         int byte1 = (ip >> 24) & 0xFF;
         int byte2 = (ip >> 16) & 0xFF;
         int byte3 = (ip >> 8) & 0xFF;

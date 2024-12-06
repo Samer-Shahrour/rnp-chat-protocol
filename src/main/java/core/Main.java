@@ -15,13 +15,18 @@ public class Main {
     static RoutingClient rclient;
     static TextClient tclient;
     static Scanner sc;
+    static int own_ip;
 
     public static void main(String[] args){
-        int own_ip = IPString.string_to_ip(args[0]);
-        System.out.println("Starting program, instance ip is: " + IPString.ip_to_string(own_ip));
+        own_ip = IPString.int_from_string(args[0]);
+        System.out.println("Starting program, instance ip is: " + IPString.string_from_int(own_ip));
         routing_table = new CopyOnWriteArrayList<>();
         server = new Server(routing_table, own_ip);
+        Thread t = new Thread(server);
+        t.start();
         rclient = new RoutingClient(routing_table);
+        Thread t2 = new Thread(rclient);
+        t2.start();
         tclient = new TextClient(routing_table);
         sc = new Scanner(System.in);
         program_loop();
@@ -32,10 +37,10 @@ public class Main {
             boolean connected = false;
 
             System.out.println("Please type:");
-            System.out.println("LIST                  - Show all connected Devices.");
-            System.out.println("IP ADDRESS            - Send a message.");
-            System.out.println("CONNECT <ipaddress>   - to connect to a device.");
-            System.out.println("EXIT                  - Exit the program.");
+            System.out.println("LIST                  : Show all connected Devices.");
+            System.out.println("IP ADDRESS            : Send a message.");
+            System.out.println("CONNECT <ipaddress>   : to connect to a device.");
+            System.out.println("EXIT                  : Exit the program.");
 
             while (true) {
                 System.out.print("> ");
@@ -96,8 +101,20 @@ public class Main {
             String ipAddress = parts[1];
             if (ipAddress.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
 
-                System.out.println("initiating connection with " + input + "...");
-                return rclient.initiate_connection(input);
+                System.out.println("initiating connection with " + ipAddress + "...");
+
+                Link mylink = new Link(own_ip,
+                        IPString.int_from_string("225.225.225.0"),
+                        own_ip,
+                        0);
+                routing_table.add(mylink);
+
+                boolean connected = rclient.initiate_connection(ipAddress);
+                if(connected){
+                    System.out.println("Successfully connected to " + ipAddress);
+                } else {
+                    System.out.println("Failed to connect to " + ipAddress);
+                }
 
             } else {
                 System.out.println("Invalid IP address. Please try again.");
@@ -117,8 +134,8 @@ public class Main {
 
         System.out.println("Listing all connected devices...");
         for (Link link : routing_table) {
-            System.out.println("Destination: " + IPString.ip_to_string(link.getDESTINATION()) + "\n" +
-                    "Hop_count: " + IPString.ip_to_string(link.getHOP_COUNT()));
+            System.out.println("Destination: " + IPString.string_from_int(link.getDESTINATION()) + "\n" +
+                    "Hop_count: " + IPString.string_from_int(link.getHOP_COUNT()));
         }
     }
 }

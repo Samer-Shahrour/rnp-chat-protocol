@@ -1,13 +1,12 @@
 package communication;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import utils.IPString;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 public class Link {
     int DESTINATION;
@@ -15,31 +14,6 @@ public class Link {
     int GATEWAY;
     int HOP_COUNT;
 
-    public Link(String ip) {
-        DESTINATION = ip_string_to_int(ip);
-        NETMASK = 0;
-        GATEWAY = 0;
-        HOP_COUNT = 0;
-    }
-
-    public int ip_string_to_int(String ip){
-        try {
-            InetAddress inetAddress = InetAddress.getByName(ip);
-
-            byte[] ipBytes = inetAddress.getAddress();
-
-            int ipNumber = 0;
-            for (int i = 0; i < ipBytes.length; i++) {
-                ipNumber |= ((ipBytes[i] & 0xFF) << (8 * (3 - i)));
-            }
-
-            return ipNumber;
-
-        } catch (UnknownHostException e) {
-            System.out.println("Invalid IP address: " + ip);
-            return -1;
-        }
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -62,9 +36,9 @@ public class Link {
 
     public String toString(){
         return "Link{" + "\n" +
-                "  " + "destination: " + IPString.ip_to_string(DESTINATION) + "\n" +
-                "  " + "netmask: " + IPString.ip_to_string(NETMASK) + "\n" +
-                "  " + "gateway: " + IPString.ip_to_string(GATEWAY) + "\n" +
+                "  " + "destination: " + IPString.string_from_int(DESTINATION) + "\n" +
+                "  " + "netmask: " + IPString.string_from_int(NETMASK) + "\n" +
+                "  " + "gateway: " + IPString.string_from_int(GATEWAY) + "\n" +
                 "  " + "hop_count: " + HOP_COUNT + "\n" +
                 "  " + "}\n";
     }

@@ -12,9 +12,9 @@ public class TestInitiateConnection {
 
     public static void main(String[] args){
 
-    Link l = new Link(IPString.string_to_ip("127.0.0.1"),
-            IPString.string_to_ip("225.225.225.0"),
-            IPString.string_to_ip("127.0.0.1"),
+    Link l = new Link(IPString.int_from_string("127.0.0.1"),
+            IPString.int_from_string("225.225.225.0"),
+            IPString.int_from_string("127.0.0.1"),
             0);
     List<Link> rt = new ArrayList<Link>();
     rt.add(l);
@@ -24,9 +24,9 @@ public class TestInitiateConnection {
     Server s = new Server(rt2, "127.0.0.2");
     Thread t = new Thread(s);
 
-
-
     t.start();
     rc.initiate_connection("127.0.0.2");
+
+
     }
 }

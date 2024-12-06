@@ -1,7 +1,6 @@
 package tests;
 
 import communication.Link;
-import core.RoutingClient;
 import core.Server;
 import core.TextClient;
 import utils.IPString;
@@ -14,9 +13,9 @@ public class TestSimpleSendText {
 
         List<Link> rtc = new ArrayList<>();
         Link l = new Link(
-                IPString.string_to_ip("127.0.0.1"),
-                IPString.string_to_ip("255.255.255.0"),
-                IPString.string_to_ip("127.0.0.1"),
+                IPString.int_from_string("127.0.0.1"),
+                IPString.int_from_string("255.255.255.0"),
+                IPString.int_from_string("127.0.0.1"),
                 1
         );
         rtc.add(l);

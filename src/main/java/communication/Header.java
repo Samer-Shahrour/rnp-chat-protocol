@@ -4,9 +4,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import utils.IPString;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -45,7 +42,7 @@ public class Header {
 
     private static Header create_text_header() {
         if (own_ip == 0){
-            own_ip = IPString.string_to_ip("127.0.0.1");
+            own_ip = IPString.int_from_string("127.0.0.1");
         }
 
         return new Header(
@@ -61,7 +58,7 @@ public class Header {
 
     private static Header create_routing_header() {
         if (own_ip == 0){
-            own_ip = IPString.string_to_ip("127.0.0.1");
+            own_ip = IPString.int_from_string("127.0.0.1");
         }
 
         return new Header(
@@ -92,11 +89,11 @@ public class Header {
     }
 
     public void set_destination_ip(String ip){
-        DESTINATION_IP = IPString.string_to_ip(ip);
+        DESTINATION_IP = IPString.int_from_string(ip);
     }
 
     public void set_sender_ip(String ip){
-        SENDER_IP = IPString.string_to_ip(ip);
+        SENDER_IP = IPString.int_from_string(ip);
     }
 
 

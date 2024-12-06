@@ -28,8 +28,8 @@ public class TextClient {
     public void send_to(String destination_ip, String txt){
         try {
             for (Link link : routing_table) {
-                if(link.getDESTINATION() == IPString.string_to_ip(destination_ip)){
-                    Socket socket = new Socket(IPString.ip_to_string(link.getGATEWAY()), port);
+                if(link.getDESTINATION() == IPString.int_from_string(destination_ip)){
+                    Socket socket = new Socket(IPString.string_from_int(link.getGATEWAY()), port);
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     Gson gson = new Gson();
 
