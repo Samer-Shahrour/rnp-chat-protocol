@@ -8,7 +8,9 @@ import utils.IPString;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestInitiateConnection {public static void main(String[] args){
+public class TestInitiateConnection {
+
+    public static void main(String[] args){
 
     Link l = new Link(IPString.string_to_ip("127.0.0.1"),
             IPString.string_to_ip("225.225.225.0"),
@@ -21,7 +23,6 @@ public class TestInitiateConnection {public static void main(String[] args){
     List<Link> rt2 = new ArrayList<Link>();
     Server s = new Server(rt2, "127.0.0.2");
     Thread t = new Thread(s);
-
 
 
 

@@ -17,7 +17,7 @@ public class RoutingClient {
         routing_table = rt;
     }
 
-    public void initiate_connection(String destination_ip){
+    public boolean initiate_connection(String destination_ip){
         try{
             Socket socket = new Socket(destination_ip, port);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -30,12 +30,12 @@ public class RoutingClient {
             Body b = new RoutingBody(routing_table);
             Message m = new Message(h, b);
 
-
             out.println(gson.toJson(m));
-
+            return true;
 
         }  catch (IOException e) {
-            System.err.println("could not connect to server");
+            System.err.println("could not connect to " + destination_ip);
+            return false;
         }
 
 

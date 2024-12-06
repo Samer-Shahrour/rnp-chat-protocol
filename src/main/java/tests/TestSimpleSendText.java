@@ -12,10 +12,18 @@ import java.util.List;
 public class TestSimpleSendText {
     public static void main(String[] args){
 
-        TextClient tc = new TextClient();
-        List<Link> rt = new ArrayList<>();
+        List<Link> rtc = new ArrayList<>();
+        Link l = new Link(
+                IPString.string_to_ip("127.0.0.1"),
+                IPString.string_to_ip("255.255.255.0"),
+                IPString.string_to_ip("127.0.0.1"),
+                1
+        );
+        rtc.add(l);
+        TextClient tc = new TextClient(rtc);
 
-        Server s = new Server(rt, "127.0.0.1");
+        List<Link> rts = new ArrayList<>();
+        Server s = new Server(rts, "127.0.0.1");
         Thread t = new Thread(s);
         t.start();
         tc.send_to("127.0.0.1", "hello world");

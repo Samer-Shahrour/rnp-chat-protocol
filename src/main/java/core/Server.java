@@ -3,7 +3,10 @@ package core;
 import java.io.*;
 import java.net.*;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.google.gson.Gson;
 import communication.Link;
 import org.json.*;
 import utils.IPString;
@@ -13,30 +16,36 @@ public class Server implements Runnable {
 
     private int port;
     private ServerSocket socket;
-    private List<Link> routingTable;
+    private List<Link> routing_table;
+    private ExecutorService executor;
+    private final int own_ip;
 
-    public Server(List<Link> rt) {
-        routingTable = rt;
+    public Server(List<Link> rt, int ip) {
+        routing_table = rt;
         port = 8080;  //default
+        own_ip = ip;
+        executor = Executors.newFixedThreadPool(5);
         try {
 
             socket = new ServerSocket(port);
-            System.out.println("core.Server started on port " + port);
+            System.out.println("SERVER started on port " + port);
 
         } catch (IOException e) {
-            System.err.println("Could not create socket");
+            System.err.println("SERVER Could not create socket");
         }
     }
 
     public Server(List<Link> rt, String own_ip) {
-        routingTable = rt;
+        routing_table = rt;
         port = 8080;  //default
+        this.own_ip = IPString.string_to_ip(own_ip);
+        executor = Executors.newFixedThreadPool(5);
         try {
             socket = new ServerSocket(port, 1, InetAddress.getByName(own_ip));
-            System.out.println("core.Server started on port " + port);
+            System.out.println("SERVER started on port " + port);
 
         } catch (IOException e) {
-            System.err.println("Could not create socket");
+            System.err.println("SERVER Could not create socket");
         }
     }
 
@@ -45,7 +54,7 @@ public class Server implements Runnable {
     public void run() {
         while (true) {
             try (Socket clientSocket = socket.accept()) {
-                System.out.println("Connected to client");
+                System.out.println("SERVER Connected to client");
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -53,7 +62,7 @@ public class Server implements Runnable {
                 String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     JSONObject m = new JSONObject(inputLine);
-                    handle_message(m);
+                    executor.submit(()-> {handle_message(m);});
                 }
 
             } catch (IOException e) {
@@ -76,9 +85,35 @@ public class Server implements Runnable {
     }
 
     private void handle_text_message(JSONObject message) {
-        String text = message.getJSONObject("BODY").getString("TEXT");
-        System.out.println("SERVER received: \n"
-                + "  " + text);
+        int destination = message.getJSONObject("HEADER").getInt("DESTINATION_IP");
+
+        //message for me
+        if(destination == own_ip) {
+            String text = message.getJSONObject("BODY").getString("TEXT");
+            System.out.println("SERVER " + IPString.ip_to_string(own_ip) + " received Message: \n"
+                    + "  " + text);
+            return;
+        }
+
+        //forward msg
+        for(Link link : routing_table){
+            if(link.getDESTINATION() == destination){
+                try{
+                    System.out.println("SERVER " + IPString.ip_to_string(own_ip) + " forwarding Message to " + IPString.ip_to_string(link.getGATEWAY()));
+                    Socket s = new Socket(IPString.ip_to_string(link.getGATEWAY()), 8080);
+                    PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+                    Gson gson = new Gson();
+                    out.println(message.toString());
+                    return;
+                } catch (IOException e) {
+                    System.err.println("SERVER Could not create socket to send message");
+                }
+
+            }
+        }
+
+        System.out.println("SERVER " + IPString.ip_to_string(own_ip) + " received Lost Message: \n");
+        //TODO
     }
 
     private void handle_routing_information(JSONObject message) {
@@ -93,19 +128,19 @@ public class Server implements Runnable {
             );
 
             boolean found = false;
-            for (int j = 0; j < routingTable.size(); j++) {
-                if (routingTable.get(j).getDESTINATION() == l.getDESTINATION()) {
+            for (int j = 0; j < routing_table.size(); j++) {
+                if (routing_table.get(j).getDESTINATION() == l.getDESTINATION()) {
                     found = true;
-                    if (routingTable.get(j).getHOP_COUNT() > l.getHOP_COUNT() + 1) {
-                        routingTable.get(j).setGATEWAY(l.getGATEWAY());
-                        routingTable.get(j).setNETMASK(l.getNETMASK());
-                        routingTable.get(j).setHOP_COUNT(l.getHOP_COUNT() + 1);
+                    if (routing_table.get(j).getHOP_COUNT() > l.getHOP_COUNT() + 1) {
+                        routing_table.get(j).setGATEWAY(l.getGATEWAY());
+                        routing_table.get(j).setNETMASK(l.getNETMASK());
+                        routing_table.get(j).setHOP_COUNT(l.getHOP_COUNT() + 1);
                     }
-                    if (routingTable.get(j).getHOP_COUNT() == l.getHOP_COUNT() + 1 &&
-                            routingTable.get(j).getGATEWAY() != l.getGATEWAY()) {
+                    if (routing_table.get(j).getHOP_COUNT() == l.getHOP_COUNT() + 1 &&
+                            routing_table.get(j).getGATEWAY() != l.getGATEWAY()) {
 
                         l.incrementHopCount();
-                        routingTable.add(l);
+                        routing_table.add(l);
                     }
                     break;
                 }
@@ -114,13 +149,13 @@ public class Server implements Runnable {
 
             if (!found) {
                 l.incrementHopCount();
-                routingTable.add(l);
+                routing_table.add(l);
                 System.out.println("SERVER received connection: " + IPString.ip_to_string(l.getDESTINATION()));
             }
 
 
         }
-        System.out.println(routingTable);
+        System.out.println(routing_table);
     }
 }
 
