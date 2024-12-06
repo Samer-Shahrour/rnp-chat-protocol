@@ -2,6 +2,7 @@ package communication;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import utils.IPString;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -57,5 +58,14 @@ public class Link {
 
     public void incrementHopCount() {
         HOP_COUNT++;
+    }
+
+    public String toString(){
+        return "Link{" + "\n" +
+                "  " + "destination: " + IPString.ip_to_string(DESTINATION) + "\n" +
+                "  " + "netmask: " + IPString.ip_to_string(NETMASK) + "\n" +
+                "  " + "gateway: " + IPString.ip_to_string(GATEWAY) + "\n" +
+                "  " + "hop_count: " + HOP_COUNT + "\n" +
+                "  " + "}\n";
     }
 }

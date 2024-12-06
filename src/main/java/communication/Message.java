@@ -12,8 +12,8 @@ public class Message {
     @Override
     public String toString() {
         return "MESSAGE{\n" +
-                "    "+ HEADER.toString() + "\n" +
-                "    "+ BODY.toString() + "\n" +
+                "  "+ HEADER.toString() + "\n" +
+                "  "+ BODY.toString() + "\n" +
                 '}';
     }
 }

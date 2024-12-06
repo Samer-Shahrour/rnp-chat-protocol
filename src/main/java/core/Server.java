@@ -1,12 +1,12 @@
+package core;
+
 import java.io.*;
 import java.net.*;
 import java.util.List;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import communication.Message;
 import communication.Link;
 import org.json.*;
+import utils.IPString;
 
 
 public class Server implements Runnable {
@@ -21,7 +21,19 @@ public class Server implements Runnable {
         try {
 
             socket = new ServerSocket(port);
-            System.out.println("Server started on port " + port);
+            System.out.println("core.Server started on port " + port);
+
+        } catch (IOException e) {
+            System.err.println("Could not create socket");
+        }
+    }
+
+    public Server(List<Link> rt, String own_ip) {
+        routingTable = rt;
+        port = 8080;  //default
+        try {
+            socket = new ServerSocket(port, 1, InetAddress.getByName(own_ip));
+            System.out.println("core.Server started on port " + port);
 
         } catch (IOException e) {
             System.err.println("Could not create socket");
@@ -64,7 +76,9 @@ public class Server implements Runnable {
     }
 
     private void handle_text_message(JSONObject message) {
-
+        String text = message.getJSONObject("BODY").getString("TEXT");
+        System.out.println("SERVER received: \n"
+                + "  " + text);
     }
 
     private void handle_routing_information(JSONObject message) {
@@ -97,9 +111,11 @@ public class Server implements Runnable {
                 }
             }
 
+
             if (!found) {
                 l.incrementHopCount();
                 routingTable.add(l);
+                System.out.println("SERVER received connection: " + IPString.ip_to_string(l.getDESTINATION()));
             }
 
 
