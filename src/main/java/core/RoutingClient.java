@@ -48,11 +48,12 @@ public class RoutingClient implements Runnable {
 
         while(true){
             for (Link link : routing_table) {
-                if(link.getHOP_COUNT() == 0) continue;
+                if(link.getHOP_COUNT() != 1) continue;
 
                 String destination_ip = IPString.string_from_int(link.getDESTINATION());
+                Socket socket = null;
                 try{
-                    Socket socket = new Socket(destination_ip, port);
+                    socket = new Socket(destination_ip, port);
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     Gson gson = new Gson();
 
@@ -66,8 +67,17 @@ public class RoutingClient implements Runnable {
 
                     out.println(gson.toJson(m));
 
-                }  catch (IOException e) {
-                    System.err.println("could not connect to " + destination_ip);
+                } catch (IOException e) {
+                    System.err.println("could not send routing_information to " + destination_ip);
+                    routing_table.remove(link);
+                } finally {
+
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        //?
+                    }
+
                 }
 
             }

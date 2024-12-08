@@ -16,6 +16,7 @@ public class TestInitiateConnection {
             IPString.int_from_string("225.225.225.0"),
             IPString.int_from_string("127.0.0.1"),
             0);
+
     List<Link> rt = new ArrayList<Link>();
     rt.add(l);
     RoutingClient rc = new RoutingClient(rt, IPString.int_from_string("127.0.0.1"));
@@ -26,7 +27,6 @@ public class TestInitiateConnection {
 
     t.start();
     rc.initiate_connection("127.0.0.2");
-
 
     }
 }

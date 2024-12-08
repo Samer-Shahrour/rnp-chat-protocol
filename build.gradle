@@ -1,9 +1,28 @@
 plugins {
     id 'java'
+    id 'application'
 }
+
+mainClassName = 'core.Main'
 
 group = 'org.example'
 version = '1.0-SNAPSHOT'
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+}
+
+
+run {
+    standardOutput = System.out
+    errorOutput = System.err
+    args = ['2.2.2.2']  // Add your arguments here
+}
+
 
 repositories {
     mavenCentral()
