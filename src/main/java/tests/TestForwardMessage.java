@@ -13,7 +13,6 @@ public class TestForwardMessage {
 
         List<Link> rt1 = new ArrayList<>();
         Link l = new Link(IPString.int_from_string("127.0.0.3"),
-                IPString.int_from_string("225.225.225.0"),
                 IPString.int_from_string("127.0.0.3"),
                 1);
         rt1.add(l);
@@ -28,7 +27,6 @@ public class TestForwardMessage {
 
         List<Link> rt3 = new ArrayList<>();
         Link l2 = new Link(IPString.int_from_string("127.0.0.3"),
-                IPString.int_from_string("225.225.225.0"),
                 IPString.int_from_string("127.0.0.2"),
                 1);
         rt3.add(l2);

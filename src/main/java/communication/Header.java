@@ -18,8 +18,6 @@ public class Header {
     public short SIZE;
     public int SENDER_IP;
     public int DESTINATION_IP;
-    public short SENDER_PORT;
-    public short DESTINATION_PORT;
     public int CHECKSUM;
 
     public static final Header TEXTHEADER = create_text_header();
@@ -33,8 +31,6 @@ public class Header {
         this.SIZE = size;
         this.SENDER_IP = senderIp;
         this.DESTINATION_IP = destinationIp;
-        this.SENDER_PORT = senderPort;
-        this.DESTINATION_PORT = destinationPort;
         this.CHECKSUM = 0;
     }
 
@@ -74,8 +70,6 @@ public class Header {
                 + "  " + "size: " + SIZE + "\n"
                 + "  " + "sender_ip: " + SENDER_IP + "\n"
                 + "  " + "destination_ip: " + DESTINATION_IP + "\n"
-                + "  " + "sender_port: " + SENDER_PORT + "\n"
-                + "  " + "destination_port: " + DESTINATION_PORT + "\n"
                 + "  " + "checksum: " + CHECKSUM + "\n"
                 + "  " + "}";
     }

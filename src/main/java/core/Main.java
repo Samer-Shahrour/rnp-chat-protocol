@@ -24,7 +24,6 @@ public class Main {
         System.out.println("Starting program, instance ip is: " + IPString.string_from_int(own_ip));
         routing_table = new CopyOnWriteArrayList<>();
         Link mylink = new Link(own_ip,
-                IPString.int_from_string("225.225.225.0"),
                 own_ip,
                 0);
         routing_table.add(mylink);
@@ -33,7 +32,7 @@ public class Main {
         t.start();
         rclient = new RoutingClient(routing_table, own_ip);
         Thread t2 = new Thread(rclient);
-        //t2.start();
+        t2.start();
         tclient = new TextClient(routing_table, own_ip);
         sc = new Scanner(System.in);
     }
@@ -66,6 +65,8 @@ public class Main {
                     break;
                 } else if (input.equalsIgnoreCase("LIST")) {
                     list();
+                } else if (input.equalsIgnoreCase("DISCONNECT")) {
+                    disconnect();
                 } else if (input.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
                     send_msg(input);
                 } else {
@@ -73,6 +74,10 @@ public class Main {
                 }
             }
             sc.close();
+    }
+
+    private static void disconnect() {
+        //TODO
     }
 
     private static void send_msg(String destination_ip){
@@ -110,7 +115,6 @@ public class Main {
 
         if(rclient.initiate_connection(ipAddress)){
             Link mylink = new Link(IPString.int_from_string(ipAddress),
-                    IPString.int_from_string("225.225.225.0"),
                     IPString.int_from_string(ipAddress),
                     1);
 

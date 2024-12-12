@@ -13,7 +13,6 @@ public class TestInitiateConnection {
     public static void main(String[] args){
 
     Link l = new Link(IPString.int_from_string("127.0.0.1"),
-            IPString.int_from_string("225.225.225.0"),
             IPString.int_from_string("127.0.0.1"),
             0);
 

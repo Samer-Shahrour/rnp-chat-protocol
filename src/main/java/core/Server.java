@@ -56,7 +56,7 @@ public class Server implements Runnable {
         while (true) {
             try {
                 Socket clientSocket = socket.accept();
-                System.out.println("SERVER Connected to client: " + clientSocket.getInetAddress().toString());
+                //System.out.println("SERVER Connected to client: " + clientSocket.getInetAddress().toString());
                 executor.submit(() -> handle_client(clientSocket));
             } catch (IOException e) {
                 System.out.println("Error accepting client connection: " + e.getMessage());
@@ -149,13 +149,13 @@ public class Server implements Runnable {
     }
 
     private void handle_routing_information(JSONObject message) {
+
         JSONArray rt = message.getJSONObject("BODY").getJSONArray("ROUTING_TABLE");
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
 
         for (int i = 0; i < rt.length(); i++) {
 
             Link l = new Link(rt.getJSONObject(i).getInt("DESTINATION"),
-                    rt.getJSONObject(i).getInt("NETMASK"),
                     sender,
                     rt.getJSONObject(i).getInt("HOP_COUNT")
             );
@@ -166,7 +166,6 @@ public class Server implements Runnable {
                     found = true;
                     if (routing_table.get(j).getHOP_COUNT() > l.getHOP_COUNT() + 1) {
                         routing_table.get(j).setGATEWAY(l.getGATEWAY());
-                        routing_table.get(j).setNETMASK(l.getNETMASK());
                         routing_table.get(j).setHOP_COUNT(l.getHOP_COUNT() + 1);
                     }
                     if (routing_table.get(j).getHOP_COUNT() == l.getHOP_COUNT() + 1 &&
