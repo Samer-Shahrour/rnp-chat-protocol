@@ -19,29 +19,15 @@ public class Server implements Runnable {
     private List<Link> routing_table;
     private final int own_ip;
 
-    public Server(List<Link> rt, int ip) {
+
+    public Server(List<Link> rt, String ip) {
         routing_table = rt;
         port = 8080;  //default
-        own_ip = ip;
-        try {
-
+        this.own_ip = IPString.int_from_string(ip);
+        try{
             socket = new ServerSocket(port);
             socket.setReuseAddress(true);
-            System.out.println("SERVER started on port " + port);
-
-        } catch (IOException e) {
-            System.err.println("SERVER Could not create socket");
-        }
-    }
-
-    public Server(List<Link> rt, String own_ip) {
-        routing_table = rt;
-        port = 8080;  //default
-        this.own_ip = IPString.int_from_string(own_ip);
-        try {
-            socket = new ServerSocket(port, 1, InetAddress.getByName(own_ip));
-            socket.setReuseAddress(true);
-            System.out.println("SERVER started on port " + port);
+            System.out.println("SERVER started on IP: " + ip + " and port: " + port);
 
         } catch (IOException e) {
             System.err.println("SERVER Could not create socket");
@@ -56,7 +42,6 @@ public class Server implements Runnable {
         while (true) {
             try {
                 Socket clientSocket = socket.accept();
-                //System.out.println("SERVER Connected to client: " + clientSocket.getInetAddress().toString());
                 executor.submit(() -> handle_client(clientSocket));
             } catch (IOException e) {
                 System.out.println("Error accepting client connection: " + e.getMessage());
@@ -84,6 +69,7 @@ public class Server implements Runnable {
     }
 
     private void handle_message(JSONObject m) {
+
 
         switch (m.getJSONObject("HEADER").getInt("MSG_TYPE")) {
             case 0:
@@ -149,7 +135,6 @@ public class Server implements Runnable {
     }
 
     private void handle_routing_information(JSONObject message) {
-
         JSONArray rt = message.getJSONObject("BODY").getJSONArray("ROUTING_TABLE");
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
 

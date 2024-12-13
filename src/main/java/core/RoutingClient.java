@@ -60,7 +60,10 @@ public class RoutingClient implements Runnable {
                     h.set_destination_ip(destination_ip);
                     h.SENDER_IP = own_ip;
 
-                    Body b = new RoutingBody(routing_table);
+                    Body b = new RoutingBody(routing_table.stream().filter(
+                            (entry) -> entry.getGATEWAY() != IPString.int_from_string(destination_ip))
+                            .toList()); //split horizon muss TODO: test
+
                     Message m = new Message(h, b);
 
                     out.println(gson.toJson(m));
@@ -76,14 +79,12 @@ public class RoutingClient implements Runnable {
 
                 }
 
-                //?
-
             }
 
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                System.out.println("Stopping Routing Client...");
             }
 
         }

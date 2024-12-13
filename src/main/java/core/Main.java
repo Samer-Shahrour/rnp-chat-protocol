@@ -18,21 +18,29 @@ public class Main {
     static Scanner sc;
     static int own_ip;
 
+    static Thread serverThread;
+    static Thread routingClientThread;
+
     private static void initialize(String[] args) {
         own_ip = IPString.int_from_string(args[0]);
         Header.own_ip = own_ip;
-        System.out.println("Starting program, instance ip is: " + IPString.string_from_int(own_ip));
         routing_table = new CopyOnWriteArrayList<>();
         Link mylink = new Link(own_ip,
                 own_ip,
                 0);
         routing_table.add(mylink);
-        server = new Server(routing_table, own_ip);
-        Thread t = new Thread(server);
-        t.start();
+
+        //start Server
+        server = new Server(routing_table, IPString.string_from_int(own_ip));
+        serverThread = new Thread(server);
+        serverThread.start();
+
+        //start Routing Client
         rclient = new RoutingClient(routing_table, own_ip);
-        Thread t2 = new Thread(rclient);
-        t2.start();
+        routingClientThread = new Thread(rclient);
+        routingClientThread.start();
+
+
         tclient = new TextClient(routing_table, own_ip);
         sc = new Scanner(System.in);
     }
@@ -51,6 +59,7 @@ public class Main {
         System.out.println("1. LIST                : Display all connected devices.");
         System.out.println("2. IP ADDRESS          : View the device's IP address.");
         System.out.println("3. CONNECT <ipaddress> : Establish a connection to a device.");
+        System.out.println("3. DISCONNECT          : Disconnect from the Network.");
         System.out.println("4. EXIT                : Terminate the program.");
         System.out.println("============================================================");
 
@@ -77,7 +86,8 @@ public class Main {
     }
 
     private static void disconnect() {
-        //TODO
+        System.out.println("Disconnecting ...");
+
     }
 
     private static void send_msg(String destination_ip){
