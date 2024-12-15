@@ -18,17 +18,18 @@ public class Server implements Runnable {
     private ServerSocket socket;
     private List<Link> routing_table;
     private final int own_ip;
+    private boolean running;
 
 
     public Server(List<Link> rt, String ip) {
         routing_table = rt;
         port = 8080;  //default
-        this.own_ip = IPString.int_from_string(ip);
+        own_ip = IPString.int_from_string(ip);
+        running = true;
         try{
-            socket = new ServerSocket(port);
+            socket = new ServerSocket(port, 16, InetAddress.getByName(ip));
             socket.setReuseAddress(true);
             System.out.println("SERVER started on IP: " + ip + " and port: " + port);
-
         } catch (IOException e) {
             System.err.println("SERVER Could not create socket");
         }
@@ -39,7 +40,7 @@ public class Server implements Runnable {
     public void run() {
         ExecutorService executor = Executors.newFixedThreadPool(10);
 
-        while (true) {
+        while (running) {
             try {
                 Socket clientSocket = socket.accept();
                 executor.submit(() -> handle_client(clientSocket));
@@ -47,6 +48,22 @@ public class Server implements Runnable {
                 System.out.println("Error accepting client connection: " + e.getMessage());
             }
         }
+        System.out.println("SERVER SHUTTING DOWN");
+
+    }
+
+    public void pause() {
+        running = false;
+        try {
+            socket.close();
+        } catch (IOException _) {
+
+        }
+
+    }
+
+    public void resume() {
+        running = true;
     }
 
     private void handle_client(Socket clientSocket) {
