@@ -16,6 +16,7 @@ public class Main {
     static RoutingClient rclient;
     static TextClient tclient;
     static int own_ip;
+    static Data data;
 
     static Thread serverThread;
     static Thread routingClientThread;
@@ -34,10 +35,11 @@ public class Main {
     private static void initialize(String[] args) {
         own_ip = IPString.int_from_string(args[0]);
         gui.logMessage("Program started on IP: " + args[0]);
-        Header.own_ip = own_ip;
         routing_table = new CopyOnWriteArrayList<>();
         Link mylink = new Link(own_ip, own_ip, 0);
         routing_table.add(mylink);
+
+        data = new Data(own_ip, routing_table, gui);
 
         // Start Server
         server = new Server(routing_table, IPString.string_from_int(own_ip));
@@ -50,7 +52,7 @@ public class Main {
         routingClientThread.start();
 
         // Start Text Client
-        tclient = new TextClient(routing_table, own_ip);
+        tclient = new TextClient(data);
     }
 
 
@@ -83,8 +85,10 @@ public class Main {
                     IPString.int_from_string(ipAddress), 1);
 
             if (!routing_table.contains(mylink)) {
-                routing_table.add(mylink);
+                routing_table.remove(mylink);
             }
+
+            routing_table.add(mylink);
 
             gui.logMessage("Successfully connected to " + ipAddress);
         } else {
@@ -153,7 +157,12 @@ public class Main {
 
     static void exitApplication() {
         gui.logMessage("Exiting application...");
-        disconnect();
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+
+        }
         System.exit(0);
     }
 }

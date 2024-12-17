@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.google.gson.Gson;
 import communication.Link;
 import org.json.*;
 import utils.IPString;

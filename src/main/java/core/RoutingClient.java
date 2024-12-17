@@ -6,6 +6,7 @@ import utils.IPString;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class RoutingClient implements Runnable {
 
         try{
             Socket socket = new Socket(destination_ip, port);
+            socket.setSoTimeout(1000);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             Gson gson = new Gson();
 
@@ -56,13 +58,12 @@ public class RoutingClient implements Runnable {
     public void run(){
 
         while(running){
-            System.out.println(routing_table);
             for (Link link : routing_table) {
                 if(link.getHOP_COUNT() != 1) continue;
 
-                String destination_ip = IPString.string_from_int(link.getDESTINATION());
-                try (Socket socket = new Socket(destination_ip, port)) {
-                    socket.setSoTimeout(1000);
+                try (Socket socket = new Socket()) {
+                    String destination_ip = IPString.string_from_int(link.getDESTINATION());
+                    socket.connect(new InetSocketAddress(destination_ip, port), 1000);
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     Gson gson = new Gson();
 
@@ -72,17 +73,18 @@ public class RoutingClient implements Runnable {
                     h.SENDER_IP = own_ip;
 
                     Body b = new RoutingBody(routing_table.stream().filter(
-                            (entry) -> entry.getGATEWAY() != IPString.int_from_string(destination_ip))
+                                    (entry) -> entry.getGATEWAY() != IPString.int_from_string(destination_ip))
                             .toList()); //split horizon muss TODO: test
 
                     Message m = new Message(h, b);
 
                     out.println(gson.toJson(m));
 
+
                 } catch (IOException e) {
                     routing_table.remove(link);
-                    for(Link l : routing_table){
-                        if(l.getGATEWAY() == link.getDESTINATION()){
+                    for (Link l : routing_table) {
+                        if (l.getGATEWAY() == link.getDESTINATION()) {
                             System.out.println(IPString.string_from_int(l.getDESTINATION()) + " just disconnected");
                             routing_table.remove(l);
                         }
