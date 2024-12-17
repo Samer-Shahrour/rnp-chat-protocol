@@ -1,6 +1,7 @@
 package core;
 
 import javax.swing.*;
+import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 
 public class appGUI {
@@ -33,6 +34,7 @@ public class appGUI {
         JFrame frame = new JFrame("RNP Chat");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
+        frame.setMinimumSize(new Dimension(800, 600));
 
         // Set background color
         frame.getContentPane().setBackground(Color.DARK_GRAY);
@@ -55,37 +57,86 @@ public class appGUI {
         // Connected Devices List
         listModel = new DefaultListModel<>();
         JList<String> deviceList = new JList<>(listModel);
+        deviceList.setFocusable(false);
         deviceList.setBackground(new Color(30, 30, 30));
         deviceList.setForeground(Color.WHITE);
         deviceList.setFont(font);
+        UIManager.put("List.foreground", new ColorUIResource(Color.WHITE));
         JScrollPane listScrollPane = new JScrollPane(deviceList);
-        listScrollPane.setPreferredSize(new Dimension(400, 0)); // Fixed width for device list
+        listScrollPane.setPreferredSize(new Dimension(250, 0)); // Fixed width for device list
         listScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JScrollBar verticalScrollbar = listScrollPane.getVerticalScrollBar();
+        JScrollBar horizontalScrollbar = listScrollPane.getHorizontalScrollBar();
+
+        verticalScrollbar.setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                thumbColor = new Color(100, 100, 100); // Darker thumb color
+                trackColor = new Color(60, 60, 60); // Darker track color
+            }
+        });
+
+        horizontalScrollbar.setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                thumbColor = new Color(100, 100, 100);
+                trackColor = new Color(60, 60, 60);
+            }
+        });
 
 
         // Controls Panel
-        JPanel controlsPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+        JPanel controlsPanel = new JPanel(new GridBagLayout());
         controlsPanel.setBackground(Color.DARK_GRAY);
         controlsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JTextField ipField = new JTextField();
-        JTextField messageField = new JTextField();
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); // Add padding between components
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST; // Align components to the left
+
+        // Row 1: IP Label and IP Field
+        gbc.gridx = 0; // Column 0
+        gbc.gridy = 0; // Row 0
+        controlsPanel.add(createStyledLabel("Enter IP Address:"), gbc);
+
+        gbc.gridx = 1; // Column 1
+        JTextField ipField = new JTextField(11);
+        ipField.setFont(font.deriveFont(Font.PLAIN, 13));
+        controlsPanel.add(ipField, gbc);
+
+        // Row 2: Message Label and Message Field
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        controlsPanel.add(createStyledLabel("Type Message:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField messageField = new JTextField(11);
+        messageField.setFont(font.deriveFont(Font.PLAIN, 13));
+        controlsPanel.add(messageField, gbc);
+
+        // Row 3: Buttons
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2; // Span two columns
+        gbc.anchor = GridBagConstraints.CENTER; // Center-align the buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 5));
+        buttonPanel.setBackground(Color.DARK_GRAY);
+
         JButton connectButton = createFlatButton("Connect", new Color(34, 139, 34));
         JButton sendMessageButton = createFlatButton("Send Message", new Color(30, 144, 255));
         JButton listButton = createFlatButton("List Devices", new Color(255, 165, 0));
         JButton disconnectButton = createFlatButton("Disconnect", new Color(220, 20, 60));
         JButton exitButton = createFlatButton("Exit", new Color(139, 0, 0));
 
-        // Add components to Controls Panel
-        controlsPanel.add(createStyledLabel("Enter IP Address:"));
-        controlsPanel.add(ipField);
-        controlsPanel.add(createStyledLabel("Type Message:"));
-        controlsPanel.add(messageField);
-        controlsPanel.add(connectButton);
-        controlsPanel.add(sendMessageButton);
-        controlsPanel.add(listButton);
-        controlsPanel.add(disconnectButton);
-        controlsPanel.add(exitButton);
+        buttonPanel.add(connectButton);
+        buttonPanel.add(sendMessageButton);
+        buttonPanel.add(listButton);
+        buttonPanel.add(disconnectButton);
+        buttonPanel.add(exitButton);
+
+        controlsPanel.add(buttonPanel, gbc);
 
         // Add Components to Main Panel
         mainPanel.add(logScrollPane, BorderLayout.CENTER);
@@ -107,11 +158,12 @@ public class appGUI {
         JButton button = new JButton(text);
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
-        button.setFont(font);
+        button.setFont(font.deriveFont(Font.BOLD, 15));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
         button.setOpaque(true);
+        button.setPreferredSize(new Dimension(text.length() * 10 + 30, 35));
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 button.setBackground(bgColor.darker());

@@ -109,13 +109,30 @@ public class Main {
 
     static void listDevices() {
         gui.logMessage("Listing connected devices...");
-        gui.listModel.clear(); // Clear the list model to avoid duplicates
+        gui.listModel.clear();
+
+        gui.listModel.addElement( "<html><div style='white-space: pre;'>" +
+                "========================" + "<br>" +
+                "CONNECTED DEVICES:      " + "<br>" +
+                "========================" + "</div><html>"
+        );
+
 
         for (Link link : routing_table) {
             if (link.getDESTINATION() == own_ip) {
-                gui.listModel.addElement("You are connected as: " + IPString.string_from_int(link.getDESTINATION()));
+                gui.listModel.addElement(
+                        "<html>DESTINATION: " + IPString.string_from_int(link.getDESTINATION()) + "<br>" +
+                                "THIS IS YOU" + "<br>" +
+                                "------------------------" + "</html>"
+                );
+
             } else {
-                gui.listModel.addElement("Destination: " + IPString.string_from_int(link.getDESTINATION()) + " (Gateway: " + IPString.string_from_int(link.getGATEWAY()) + ")");
+                gui.listModel.addElement(
+                        "<html>DESTINATION: " + IPString.string_from_int(link.getDESTINATION()) + "<br>" +
+                                "GATEWAY    : " + IPString.string_from_int(link.getGATEWAY()) + "<br>" +
+                                "HOPCOUNT   : " + link.getHOP_COUNT() + "<br>" +
+                                "------------------------" + "</html>"
+                );
             }
         }
     }
