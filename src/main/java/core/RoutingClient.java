@@ -13,11 +13,13 @@ public class RoutingClient implements Runnable {
     int port;
     List<Link> routing_table;
     private final int own_ip;
+    private boolean running;
 
     public RoutingClient(List<Link> rt, int ip){
         port = 8080;
         routing_table = rt;
         own_ip = ip;
+        running = true;
     }
 
     public boolean initiate_connection(String destination_ip){
@@ -42,16 +44,25 @@ public class RoutingClient implements Runnable {
             return false;
         }
     }
+    public void pause() {
+        running = false;
+    }
+
+    public void resume() {
+        running = true;
+    }
 
     @Override
     public void run(){
 
-        while(true){
+        while(running){
+            System.out.println(routing_table);
             for (Link link : routing_table) {
                 if(link.getHOP_COUNT() != 1) continue;
 
                 String destination_ip = IPString.string_from_int(link.getDESTINATION());
                 try (Socket socket = new Socket(destination_ip, port)) {
+                    socket.setSoTimeout(1000);
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     Gson gson = new Gson();
 
@@ -69,11 +80,11 @@ public class RoutingClient implements Runnable {
                     out.println(gson.toJson(m));
 
                 } catch (IOException e) {
-
+                    routing_table.remove(link);
                     for(Link l : routing_table){
                         if(l.getGATEWAY() == link.getDESTINATION()){
                             System.out.println(IPString.string_from_int(l.getDESTINATION()) + " just disconnected");
-                            routing_table.remove(link);
+                            routing_table.remove(l);
                         }
                     }
 

@@ -64,6 +64,13 @@ public class Server implements Runnable {
 
     public void resume() {
         running = true;
+        try{
+            socket = new ServerSocket(port, 16, InetAddress.getByName(IPString.string_from_int(own_ip)));
+            socket.setReuseAddress(true);
+            System.out.println("SERVER started on IP: " + IPString.string_from_int(own_ip) + " and port: " + port);
+        } catch (IOException e) {
+            System.err.println("SERVER Could not create socket");
+        }
     }
 
     private void handle_client(Socket clientSocket) {
@@ -114,6 +121,8 @@ public class Server implements Runnable {
             System.out.println("SERVER " + IPString.string_from_int(own_ip) + " received Message: \n"
                     + "  " + text);
             return;
+
+            //TODO: send ACK
         }
 
         if(message.getJSONObject("HEADER").getInt("TTL") <= 0){
@@ -179,12 +188,28 @@ public class Server implements Runnable {
                     break;
                 }
             }
+
             if (!found) {
                 l.incrementHopCount();
                 routing_table.add(l);
                 System.out.println("SERVER received connection: " + IPString.string_from_int(l.getDESTINATION()));
             }
         }
+
+
+
+        for(Link link : routing_table.stream().filter(e -> e.getGATEWAY() == sender).toList()){
+            boolean found = false;
+                for (int i = 0; i < rt.length(); i++) {
+                    if (rt.getJSONObject(i).getInt("DESTINATION") == link.getDESTINATION()) {
+                        found = true;
+                    }
+                }
+
+                if (!found) {
+                    routing_table.remove(link);
+                }
+        }//TODO: TEST
 
     }
 }

@@ -72,7 +72,7 @@ public class Main {
 
 
     public static void connect(String ipAddress) {
-        if (!ipAddress.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
+        if (!ipAddress.trim().matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
             gui.logMessage("Invalid IP address. Please try again.");
             return;
         }
@@ -95,16 +95,30 @@ public class Main {
     static void disconnect() {
         gui.logMessage("Disconnecting...");
         server.pause();
-        routing_table = routing_table.stream().filter(
-                (entry) -> entry.getDESTINATION() == own_ip
-        ).toList();
+        rclient.pause();
+
+        routing_table.clear();
+        Link mylink = new Link(own_ip, own_ip, 0);
+        routing_table.add(mylink);
+
         gui.logMessage("Disconnected from the network.");
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
             // Handle Exception
         }
+
+        serverThread.interrupt();
+        routingClientThread.interrupt();
+
+        rclient.resume();
+        routingClientThread = new Thread(rclient);
+        routingClientThread.start();
+
         server.resume();
+        serverThread = new Thread(server);
+        serverThread.start();
+
     }
 
     static void listDevices() {
