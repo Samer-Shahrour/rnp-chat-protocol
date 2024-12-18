@@ -9,51 +9,56 @@ import utils.IPString;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Optional;
+import java.util.zip.CRC32;
 
 
 public class TextClient {
     private Data data;
-    private Socket socket;
 
-    public TextClient(Data data){
+    public TextClient(Data data) {
         this.data = data;
     }
 
-    public void send_to(String destination_ip, String txt){
-        boolean sent = false;
-        try {
-            for (Link link : data.routing_table) {
-                if(link.getDESTINATION() == IPString.int_from_string(destination_ip)){
-                    socket = new Socket(IPString.string_from_int(link.getGATEWAY()), data.port);
+    public void send_to(String destination_ip, String txt) {
+        int id = data.get_next_free_ip();
+        if (id == -1) {
+            data.gui.logMessage("No free ids. Please wait until a message gets acknowledged.");
+            return;
+        }
+
+        Optional<Link> link = data.routing_table.stream().filter(l -> l.getDESTINATION() == IPString.int_from_string(destination_ip)).findFirst();
+        link.ifPresentOrElse(
+            value -> {
+                try (Socket socket = new Socket(IPString.string_from_int(value.getGATEWAY()), data.port)) {
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
                     Gson gson = new Gson();
+                    data.reserve_id(id);
 
                     Header h = Header.TEXTHEADER;
                     h.SIZE = (short) txt.length();
                     h.set_destination_ip(destination_ip);
                     h.SENDER_IP = data.getIPint();
+                    CRC32 crc = new CRC32();
+                    crc.update(txt.getBytes());
+                    crc.update(id);
+                    h.CHECKSUM = (int) crc.getValue();
 
-                    Body b = new TextBody(txt);
+                    Body b = new TextBody(txt, id);
                     Message m = new Message(h, b);
 
                     out.println(gson.toJson(m));
-                    sent = true;
+                    data.gui.logMessage("Sending to " + destination_ip + ":\n " +
+                            " -> " + "\"" + txt + "\"" + "\n " +
+                            " -> " + "id: " + id);
+
+                } catch (IOException e) {
+                    System.err.println("I/O-Fehler beim Verbinden zum Server: " + e.getMessage());
                 }
-            }
+            },
+            () -> data.gui.logMessage("No Connection to send Message")
+        );
 
-            if(!sent){
-                data.gui.logMessage("No Connection to send Message\n");
-            }
-
-        } catch (IOException e) {
-            System.err.println("I/O-Fehler beim Verbinden zum Server: " + e.getMessage());
-        } finally {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                System.out.println("CLINET SOCKET CLOSE: " + e.getMessage());
-            }
-        }
     }
-
 }

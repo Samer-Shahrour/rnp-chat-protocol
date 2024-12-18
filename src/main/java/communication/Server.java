@@ -2,8 +2,10 @@ package communication;
 
 import java.io.*;
 import java.net.*;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.CRC32;
 
 import com.google.gson.Gson;
 import core.Data;
@@ -73,7 +75,6 @@ public class Server implements Runnable {
     }
 
     private void handle_client(Socket clientSocket) {
-        String sourceIP = clientSocket.getInetAddress().toString();
         JSONObject m = null;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())))
         {
@@ -91,23 +92,23 @@ public class Server implements Runnable {
                 System.out.println("Error closing client socket: " + e.getMessage());
             }
             if (m != null) {
-                handle_message(m, sourceIP);
+                handle_message(m);
             }
         }
 
     }
 
 
-    private void handle_message(JSONObject message, String source) {
+    private void handle_message(JSONObject message) {
         int msg_type = message.getJSONObject("HEADER").getInt("MSG_TYPE");
         int destination = message.getJSONObject("HEADER").getInt("DESTINATION_IP");
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
-
+        
         //message for me
         if(destination == data.getIPint()){
             switch (msg_type) {
                 case MessageTypes.TEXT_MESSAGE:
-                    handle_text_message(message, source);
+                    handle_text_message(message);
                     break;
 
                 case MessageTypes.ROUTING_INFORMATION:
@@ -146,7 +147,6 @@ public class Server implements Runnable {
                     PrintWriter out = new PrintWriter(s.getOutputStream(), true);
                     message.getJSONObject("HEADER").put("TTL", message.getJSONObject("HEADER").getInt("TTL")-1);
                     out.println(message.toString());
-                    data.gui.logMessage(message.toString());
                     return;
                 } catch (IOException e) {
                     System.err.println("SERVER Could not create socket to send message");
@@ -158,48 +158,66 @@ public class Server implements Runnable {
 
     }
 
-    private void handle_text_message(JSONObject message, String source) {
+    private void handle_text_message(JSONObject message) {
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
+        int checksum = message.getJSONObject("HEADER").getInt("CHECKSUM");
         int id = message.getJSONObject("BODY").getInt("MSG_ID");
-
-
         String text = message.getJSONObject("BODY").getString("TEXT");
 
+        CRC32 crc = new CRC32();
+        crc.update(text.getBytes());
+        crc.update(id);
 
-        //sending ACK
-        try (Socket s = new Socket(source, data.port)) {
-            PrintWriter out = new PrintWriter(s.getOutputStream(), true);
-            Gson gson = new Gson();
-
-            Header h = Header.ACKHEADER;
-            h.MSG_TYPE = 2;
-            h.SIZE = 0;
-            h.DESTINATION_IP = sender;
-            h.SENDER_IP = data.getIPint();
-
-            Body b = new AckBody(id);
-            Message m = new Message(h, b);
-
-            out.println(gson.toJson(m));
-
-            data.gui.logMessage("RECEIVED MESSAGE FROM: " + IPString.string_from_int(sender) + "\n" +
-                    "  -> " + "\"" +  text + "\"" + "\n" +
-                    "  -> " + "Ack sent" + m);
-
-
-        } catch (IOException e) {
-            System.err.println("SERVER sending ack Could not create socket to send message:" + e.getMessage());
+        if(checksum != crc.getValue()){
+            //TODO:send NACK
+            return;
         }
 
+        //sending ACK
+        Optional<Link> opt = data.routing_table.stream().filter(l -> l.getDESTINATION() == sender).findFirst();
+        opt.ifPresentOrElse(
+            existing_link -> {
+                try (Socket s = new Socket(IPString.string_from_int(existing_link.getGATEWAY()), data.port)) {
+
+                    PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+                    Gson gson = new Gson();
+
+                    Header h = Header.ACKHEADER;
+                    h.DESTINATION_IP = sender;
+                    h.SENDER_IP = data.getIPint();
+                    crc.reset();
+                    crc.update(id);
+                    h.CHECKSUM = (int) crc.getValue();
+
+                    Body b = new AckBody(id);
+                    Message m = new Message(h, b);
+
+                    out.println(gson.toJson(m));
+
+                    data.gui.logMessage("RECEIVED MESSAGE FROM: " + IPString.string_from_int(sender) + "\n" +
+                            "  -> " + "\"" +  text + "\"" + "\n" +
+                            "  -> " + "Ack sent");
+
+
+                } catch (IOException e) {
+                    System.err.println("SERVER sending ack Could not create socket to send message:" + e.getMessage());
+                }
+            },
+            () -> data.gui.logMessage("No Connection to send ACK?")
+        );
 
     }
 
     private void handle_acknowledge(JSONObject message) {
-        data.gui.logMessage("message acknowledged");
+        int id = message.getJSONObject("BODY").getInt("MSG_ID");
+        data.gui.logMessage("message acknowledged, id: " + id);
+        data.free_id(id);
     }
 
     private void handle_not_acknowledge(JSONObject message) {
-        data.gui.logMessage("message lost");
+        int id = message.getJSONObject("BODY").getInt("MSG_ID");
+        data.gui.logMessage("message lost, id: " + id);
+        data.free_id(id);
     }
 
     private void handle_routing_information(JSONObject message) {
@@ -208,51 +226,49 @@ public class Server implements Runnable {
 
         for (int i = 0; i < rt.length(); i++) {
 
-            Link l = new Link(rt.getJSONObject(i).getInt("DESTINATION"),
+            Link new_link = new Link(rt.getJSONObject(i).getInt("DESTINATION"),
                     sender,
                     rt.getJSONObject(i).getInt("HOP_COUNT")
             );
 
-            boolean found = false;
-            for (int j = 0; j < data.routing_table.size(); j++) {
-                if (data.routing_table.get(j).getDESTINATION() == l.getDESTINATION()) {
-                    found = true;
-                    if (data.routing_table.get(j).getHOP_COUNT() > l.getHOP_COUNT() + 1) {
-                        data.routing_table.get(j).setGATEWAY(l.getGATEWAY());
-                        data.routing_table.get(j).setHOP_COUNT(l.getHOP_COUNT() + 1);
-                    }
-                    if (data.routing_table.get(j).getHOP_COUNT() == l.getHOP_COUNT() + 1 &&
-                            data.routing_table.get(j).getGATEWAY() != l.getGATEWAY()) {
+            Optional<Link> opt = data.routing_table.stream().filter(e -> e.getDESTINATION() == new_link.getDESTINATION()).findFirst();
+            opt.ifPresentOrElse(
+                    existing_link -> {
+                        if (existing_link.getHOP_COUNT() > new_link.getHOP_COUNT() + 1) {
+                            existing_link.setGATEWAY(new_link.getGATEWAY());
+                            existing_link.setHOP_COUNT(new_link.getHOP_COUNT() + 1);
+                        }
+                        if (existing_link.getHOP_COUNT() == new_link.getHOP_COUNT() + 1 &&
+                                existing_link.getGATEWAY() != new_link.getGATEWAY()) {
 
-                        l.incrementHopCount();
-                        data.routing_table.add(l);
+                            new_link.incrementHopCount();
+                            data.routing_table.add(new_link);
+                        }
+                    },
+                    () -> {
+                        new_link.incrementHopCount();
+                        data.routing_table.add(new_link);
+                        data.gui.logMessage("Just CONNECTED: " + IPString.string_from_int(new_link.getDESTINATION()));
                     }
-                    break;
-                }
-            }
+            );
 
-            if (!found) {
-                l.incrementHopCount();
-                data.routing_table.add(l);
-                System.out.println("SERVER received connection: " + IPString.string_from_int(l.getDESTINATION()));
-            }
         }
-
 
 
         for(Link link : data.routing_table.stream().filter(e -> e.getGATEWAY() == sender).toList()){
             boolean found = false;
                 for (int i = 0; i < rt.length(); i++) {
-                    if (rt.getJSONObject(i).getInt("DESTINATION") == link.getDESTINATION()) {
+                    if (rt.getJSONObject(i).getInt("DESTINATION") == link.getDESTINATION() &&
+                            rt.getJSONObject(i).getInt("HOP_COUNT") <= 16) {
                         found = true;
                     }
                 }
 
                 if (!found) {
                     data.routing_table.remove(link);
-                    data.gui.logMessage("SANITY CHECK: disconnected: " + IPString.string_from_int(link.getDESTINATION()));
+                    data.gui.logMessage("Just DISCONNECTED: " + IPString.string_from_int(link.getDESTINATION()));
                 }
-        }//TODO: Sanity check
+        }
 
     }
 

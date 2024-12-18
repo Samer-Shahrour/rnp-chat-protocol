@@ -10,11 +10,12 @@ public class appGUI {
     public JTextArea logArea;
     public DefaultListModel<String> listModel;
     private final Font font;
+    private final String myip;
 
-    public appGUI(){
+    public appGUI(String ip){
         setLookAndFeel();
         font = new Font("Source Code Pro", Font.BOLD, 16);
-
+        myip = ip;
     }
 
 
@@ -32,7 +33,7 @@ public class appGUI {
     }
 
     public void createAndShowGUI() {
-        JFrame frame = new JFrame("RNP Chat");
+        JFrame frame = new JFrame("RNP Chat, IP: " + myip);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 650);
         frame.setMinimumSize(new Dimension(1000, 650));
@@ -167,7 +168,13 @@ public class appGUI {
                 Matcher matcher = pattern.matcher(selectedValue);
                 if (matcher.find()) {
                     String ipAddress = matcher.group(1); // Extract the matched IP
-                    ipField.setText(ipAddress);
+
+                    if (ipAddress.equalsIgnoreCase(myip)){
+                        ipField.setText("THIS IS YOU, please select a different host");
+                    } else {
+                        ipField.setText(ipAddress);
+                    }
+
                 } else {
                     ipField.setText("please select a destination");
                 }
@@ -199,10 +206,12 @@ public class appGUI {
         disconnectButton.addActionListener  (_ -> Main.disconnect());
         exitButton.addActionListener        (_ -> Main.exitApplication());
         clearButton.addActionListener       (_ -> {
-            logArea.setText("");
+            logArea.setText("> Program started on IP: " + myip + "\n");
             ipField.setText("");
             messageField.setText("");
         });
+
+        logMessage("Program started on IP: " + myip);
     }
 
     private JButton createFlatButton(String text, Color bgColor) {

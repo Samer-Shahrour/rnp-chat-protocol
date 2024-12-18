@@ -25,8 +25,13 @@ public class Main {
     static appGUI gui;
 
     public static void main(String[] args) {
+        if (args.length == 0) {
+            System.err.println("Usage: java Main <server_ip>: please provide ip address.");
+            System.exit(3);
+        }
+
         SwingUtilities.invokeLater(() -> {
-            gui = new appGUI();
+            gui = new appGUI(args[0]);
             gui.createAndShowGUI();
             initialize(args);
         });
@@ -35,11 +40,7 @@ public class Main {
 
     private static void initialize(String[] args) {
         own_ip = IPString.int_from_string(args[0]);
-        gui.logMessage("Program started on IP: " + args[0]);
         routing_table = new CopyOnWriteArrayList<>();
-        Link mylink = new Link(own_ip, own_ip, 0);
-        routing_table.add(mylink);
-
         data = new Data(own_ip, routing_table, gui);
 
         // Start Server
@@ -69,7 +70,6 @@ public class Main {
             return;
         }
 
-        gui.logMessage("Sending to " + destinationIP + ": " + message);
         tclient.send_to(destinationIP, message);
     }
 
@@ -81,20 +81,13 @@ public class Main {
         }
 
         gui.logMessage("Initiating connection with " + ipAddress + "...");
-        if (rclient.initiate_connection(ipAddress)) {
-            Link mylink = new Link(IPString.int_from_string(ipAddress),
-                    IPString.int_from_string(ipAddress), 1);
+        rclient.initiate_connection(ipAddress);
+        Link mylink = new Link(IPString.int_from_string(ipAddress),
+                IPString.int_from_string(ipAddress), 1);
 
-            if (!routing_table.contains(mylink)) {
-                routing_table.remove(mylink);
-            }
+        routing_table.remove(mylink);
+        routing_table.add(mylink);
 
-            routing_table.add(mylink);
-
-            gui.logMessage("Successfully connected to " + ipAddress);
-        } else {
-            gui.logMessage("Failed to connect to " + ipAddress);
-        }
     }
 
     static void disconnect() {

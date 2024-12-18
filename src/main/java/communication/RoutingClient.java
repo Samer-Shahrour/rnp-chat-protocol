@@ -20,8 +20,7 @@ public class RoutingClient implements Runnable {
         this.data = data;
     }
 
-    public boolean initiate_connection(String destination_ip){
-
+    public void initiate_connection(String destination_ip){
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(destination_ip, data.port), 1000);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -36,10 +35,11 @@ public class RoutingClient implements Runnable {
             Message m = new Message(h, b);
 
             out.println(gson.toJson(m));
-            return true;
+
+            data.gui.logMessage("Successfully connected to " + destination_ip);
 
         }  catch (IOException e) {
-            return false;
+            data.gui.logMessage("Failed to connect to " + destination_ip);
         }
     }
     public void pause() {
