@@ -1,7 +1,8 @@
-package core;
+package communication;
 
 import com.google.gson.Gson;
-import communication.*;
+import core.Data;
+import messages.*;
 import utils.IPString;
 
 
@@ -41,7 +42,7 @@ public class TextClient {
             }
 
             if(!sent){
-                data.gui.logArea.append("No Connection to send Message\n");
+                data.gui.logMessage("No Connection to send Message\n");
             }
 
         } catch (IOException e) {

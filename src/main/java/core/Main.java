@@ -1,11 +1,12 @@
 package core;
 
-import communication.Header;
-import communication.Link;
+import communication.RoutingClient;
+import communication.Server;
+import communication.TextClient;
+import messages.Link;
 import utils.IPString;
 
 import javax.swing.*;
-import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -42,12 +43,12 @@ public class Main {
         data = new Data(own_ip, routing_table, gui);
 
         // Start Server
-        server = new Server(routing_table, IPString.string_from_int(own_ip));
+        server = new Server(data);
         serverThread = new Thread(server);
         serverThread.start();
 
         // Start Routing Client
-        rclient = new RoutingClient(routing_table, own_ip);
+        rclient = new RoutingClient(data);
         routingClientThread = new Thread(rclient);
         routingClientThread.start();
 
@@ -147,9 +148,9 @@ public class Main {
             } else {
                 gui.listModel.addElement(
                         "<html>DESTINATION: " + IPString.string_from_int(link.getDESTINATION()) + "<br>" +
-                                "GATEWAY    : " + IPString.string_from_int(link.getGATEWAY()) + "<br>" +
-                                "HOPCOUNT   : " + link.getHOP_COUNT() + "<br>" +
-                                "------------------------" + "</html>"
+                              "GATEWAY....: " + IPString.string_from_int(link.getGATEWAY()) + "<br>" +
+                              "HOPCOUNT...: " + link.getHOP_COUNT() + "<br>" +
+                              "------------------------" + "</html>"
                 );
             }
         }
@@ -160,7 +161,7 @@ public class Main {
 
         try {
             Thread.sleep(1000);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
 
         }
         System.exit(0);

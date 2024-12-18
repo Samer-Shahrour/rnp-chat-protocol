@@ -1,9 +1,6 @@
 package core;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,7 +28,7 @@ public class appGUI {
     }
 
     public void logMessage(String message) {
-        logArea.append(message + "\n");
+        logArea.append("> " + message + "\n");
     }
 
     public void createAndShowGUI() {
@@ -160,22 +157,21 @@ public class appGUI {
 
 
         //select function
-        deviceList.addListSelectionListener(new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) { // Ensure the event is not fired multiple times
-                    String selectedValue = (String) deviceList.getSelectedValue();
-                    if (selectedValue != null) {
-                        // Use a regular expression to extract the IP address
-                        Pattern pattern = Pattern.compile("DESTINATION: (\\d+\\.\\d+\\.\\d+\\.\\d+)");
-                        Matcher matcher = pattern.matcher(selectedValue);
-                        if (matcher.find()) {
-                            String ipAddress = matcher.group(1); // Extract the matched IP
-                            ipField.setText(ipAddress);
-                        } else {
-                            ipField.setText("please select a destination");
-                        }
-                    }
+        deviceList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) { // Ensure the event is not fired multiple times
+                String selectedValue = deviceList.getSelectedValue();
+                if (selectedValue == null) return;
+
+                // Use a regular expression to extract the IP address
+                Pattern pattern = Pattern.compile("DESTINATION: (\\d+\\.\\d+\\.\\d+\\.\\d+)");
+                Matcher matcher = pattern.matcher(selectedValue);
+                if (matcher.find()) {
+                    String ipAddress = matcher.group(1); // Extract the matched IP
+                    ipField.setText(ipAddress);
+                } else {
+                    ipField.setText("please select a destination");
                 }
+
             }
         });
 
@@ -197,12 +193,12 @@ public class appGUI {
         frame.setVisible(true);
 
         // Event Listeners
-        connectButton.addActionListener(e -> Main.connect(ipField.getText()));
-        sendMessageButton.addActionListener(e -> Main.sendMessage(messageField.getText(), ipField.getText()));
-        listButton.addActionListener(e -> Main.listDevices());
-        disconnectButton.addActionListener(e -> Main.disconnect());
-        exitButton.addActionListener(e -> Main.exitApplication());
-        clearButton.addActionListener(e -> {
+        connectButton.addActionListener     (_ -> Main.connect(ipField.getText().trim()));
+        sendMessageButton.addActionListener (_ -> Main.sendMessage(messageField.getText().trim(), ipField.getText()));
+        listButton.addActionListener        (_ -> Main.listDevices());
+        disconnectButton.addActionListener  (_ -> Main.disconnect());
+        exitButton.addActionListener        (_ -> Main.exitApplication());
+        clearButton.addActionListener       (_ -> {
             logArea.setText("");
             ipField.setText("");
             messageField.setText("");

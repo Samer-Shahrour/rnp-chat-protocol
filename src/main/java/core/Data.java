@@ -1,6 +1,6 @@
 package core;
 
-import communication.Link;
+import messages.Link;
 import utils.IPString;
 
 import java.util.List;

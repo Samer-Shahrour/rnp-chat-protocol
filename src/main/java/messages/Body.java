@@ -1,4 +1,4 @@
-package communication;
+package messages;
 
 import java.util.List;
 

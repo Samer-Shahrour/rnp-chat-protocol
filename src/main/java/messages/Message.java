@@ -1,8 +1,9 @@
-package communication;
+package messages;
 
 public class Message {
     public Header HEADER;
     public Body BODY;
+
 
     public Message(Header header, Body body) {
         HEADER = header;

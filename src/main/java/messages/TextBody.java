@@ -1,6 +1,4 @@
-package communication;
-
-import java.util.List;
+package messages;
 
 public class TextBody extends Body {
     int MSG_ID;
