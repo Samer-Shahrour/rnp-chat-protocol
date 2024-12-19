@@ -1,11 +1,10 @@
 package messages;
-import lombok.AllArgsConstructor;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import utils.IPString;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 public class Header {
 

@@ -28,5 +28,4 @@ for ((i=1; i<=NUM_TERMINALS; i++)); do
   start powershell.exe -NoExit -Command "$CMD"
 done
 
-exit 0
 

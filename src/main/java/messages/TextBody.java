@@ -1,6 +1,7 @@
 package messages;
 
 public class TextBody extends Body {
+
     int MSG_ID;
     String TEXT;
 

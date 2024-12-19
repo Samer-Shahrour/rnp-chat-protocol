@@ -201,17 +201,17 @@ public class appGUI {
 
         // Event Listeners
         connectButton.addActionListener     (_ -> Main.connect(ipField.getText().trim()));
-        sendMessageButton.addActionListener (_ -> Main.sendMessage(messageField.getText().trim(), ipField.getText()));
-        listButton.addActionListener        (_ -> Main.listDevices());
+        sendMessageButton.addActionListener (_ -> Main.send_message(messageField.getText().trim(), ipField.getText()));
+        listButton.addActionListener        (_ -> Main.list_devices());
         disconnectButton.addActionListener  (_ -> Main.disconnect());
-        exitButton.addActionListener        (_ -> Main.exitApplication());
+        exitButton.addActionListener        (_ -> Main.exit_application());
         clearButton.addActionListener       (_ -> {
-            logArea.setText("> Program started on IP: " + myip + "\n");
+            logArea.setText("> Program started on IP: " + myip + " <\n");
             ipField.setText("");
             messageField.setText("");
         });
 
-        logMessage("Program started on IP: " + myip);
+        logMessage("Program started on IP: " + myip + " <");
     }
 
     private JButton createFlatButton(String text, Color bgColor) {

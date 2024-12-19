@@ -8,9 +8,9 @@ import utils.IPString;
 @Getter
 @Setter
 public class Link {
-    int DESTINATION;
-    int GATEWAY;
-    int HOP_COUNT;
+    private int DESTINATION;
+    private int GATEWAY;
+    private int HOP_COUNT;
 
     public Link(int destination, int gateway, int hopCount) {
         this.DESTINATION = destination;
@@ -31,10 +31,10 @@ public class Link {
 
         Link link = (Link) obj;
 
-        return DESTINATION == link.DESTINATION;  // Compare DESTINATION values
+        return DESTINATION == link.DESTINATION;
     }
 
-    public void incrementHopCount() {
+    public void increment_hop_count() {
         HOP_COUNT++;
     }
 

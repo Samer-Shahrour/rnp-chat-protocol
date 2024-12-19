@@ -2,7 +2,9 @@ package communication;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.CRC32;
@@ -26,9 +28,9 @@ public class Server implements Runnable {
         this.running = true;
         this.data = data;
         try{
-            this.socket = new ServerSocket(data.port, 16, InetAddress.getByName(data.getIPString()));
+            this.socket = new ServerSocket(data.port, 16, InetAddress.getByName(data.get_own_IP_String()));
             this.socket.setReuseAddress(true);
-            System.out.println("SERVER started on IP: " + data.getIPString() + " and port: " + data.port);
+            System.out.println("SERVER started on IP: " + data.get_own_IP_String() + " and port: " + data.port);
         } catch (IOException e) {
             System.err.println("SERVER Could not create socket");
         }
@@ -66,9 +68,9 @@ public class Server implements Runnable {
     public void resume() {
         running = true;
         try{
-            socket = new ServerSocket(data.port, 16, InetAddress.getByName(data.getIPString()));
+            socket = new ServerSocket(data.port, 16, InetAddress.getByName(data.get_own_IP_String()));
             socket.setReuseAddress(true);
-            System.out.println("SERVER started on IP: " + data.getIPString() + " and port: " + data.port);
+            System.out.println("SERVER started on IP: " + data.get_own_IP_String() + " and port: " + data.port);
         } catch (IOException e) {
             System.err.println("SERVER Could not create socket");
         }
@@ -103,9 +105,9 @@ public class Server implements Runnable {
         int msg_type = message.getJSONObject("HEADER").getInt("MSG_TYPE");
         int destination = message.getJSONObject("HEADER").getInt("DESTINATION_IP");
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
-        
+
         //message for me
-        if(destination == data.getIPint()){
+        if(destination == data.get_own_IP_int()){
             switch (msg_type) {
                 case MessageTypes.TEXT_MESSAGE:
                     handle_text_message(message);
@@ -132,45 +134,55 @@ public class Server implements Runnable {
 
         //dead message ttl
         if(message.getJSONObject("HEADER").getInt("TTL") <= 0){
-            System.out.println("SERVER " + data.getIPString() + " received Dead Message: \n");
+            System.out.println("SERVER " + data.get_own_IP_String() + " received Dead Message: \n");
 
             //TODO: what to do?
             return;
         }
 
         //forward msg
-        for(Link link : data.routing_table){
-            if(link.getDESTINATION() == destination){
-                data.gui.logMessage("Forwarding Message from: " + IPString.string_from_int(sender) + ", to: " + IPString.string_from_int(link.getGATEWAY()));
+        Optional<Link> opt = data.routing_table.stream().filter(l -> l.getDESTINATION() == destination).findFirst();
+        opt.ifPresentOrElse(
+            existing_link -> {
+                data.gui.logMessage("Forwarding Message from: " + IPString.string_from_int(sender) + ", to: " + IPString.string_from_int(existing_link.getGATEWAY()));
 
-                try (Socket s = new Socket(IPString.string_from_int(link.getGATEWAY()), data.port)) {
+                try (Socket s = new Socket(IPString.string_from_int(existing_link.getGATEWAY()), data.port)) {
                     PrintWriter out = new PrintWriter(s.getOutputStream(), true);
                     message.getJSONObject("HEADER").put("TTL", message.getJSONObject("HEADER").getInt("TTL")-1);
-                    out.println(message.toString());
-                    return;
+                    out.println(message);
                 } catch (IOException e) {
                     System.err.println("SERVER Could not create socket to send message");
                 }
-
-            }
-        }
-
+            },
+            () -> data.gui.logMessage("No Connection to send ACK?")
+        );
 
     }
 
     private void handle_text_message(JSONObject message) {
+
+        System.out.println(message);
+
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
         int checksum = message.getJSONObject("HEADER").getInt("CHECKSUM");
         int id = message.getJSONObject("BODY").getInt("MSG_ID");
         String text = message.getJSONObject("BODY").getString("TEXT");
+        String bodystring = message.getJSONObject("BODY").toString();
 
+        JSONObject body = message.getJSONObject("BODY");
+        TreeMap<String, Object> sortedBody = new TreeMap<>();
+        for (String key : body.keySet()) {
+            sortedBody.put(key, body.get(key));
+        }
+        String sortedBodyString = new JSONObject(sortedBody).toString();
+        System.out.println(sortedBodyString);
+
+        System.out.println(bodystring);
         CRC32 crc = new CRC32();
-        crc.update(text.getBytes());
-        crc.update(id);
+        crc.update(sortedBodyString.getBytes(StandardCharsets.UTF_8));
 
-        if(checksum != crc.getValue()){
-            //TODO:send NACK
-            return;
+        if(checksum != ((int) crc.getValue())){
+            data.gui.logMessage("-CHECKSUM MISMATCH-");
         }
 
         //sending ACK
@@ -182,20 +194,22 @@ public class Server implements Runnable {
                     PrintWriter out = new PrintWriter(s.getOutputStream(), true);
                     Gson gson = new Gson();
 
+                    Body b = new AckBody(id);
+                    String bs = gson.toJson(b);
+                    crc.reset();
+                    crc.update(bs.getBytes());
+
                     Header h = Header.ACKHEADER;
                     h.DESTINATION_IP = sender;
-                    h.SENDER_IP = data.getIPint();
-                    crc.reset();
-                    crc.update(id);
+                    h.SENDER_IP = data.get_own_IP_int();
                     h.CHECKSUM = (int) crc.getValue();
 
-                    Body b = new AckBody(id);
                     Message m = new Message(h, b);
 
                     out.println(gson.toJson(m));
 
                     data.gui.logMessage("RECEIVED MESSAGE FROM: " + IPString.string_from_int(sender) + "\n" +
-                            "  -> " + "\"" +  text + "\"" + "\n" +
+                            "  -> " + "\"" + text + "\"" + "\n" +
                             "  -> " + "Ack sent");
 
 
@@ -241,12 +255,12 @@ public class Server implements Runnable {
                         if (existing_link.getHOP_COUNT() == new_link.getHOP_COUNT() + 1 &&
                                 existing_link.getGATEWAY() != new_link.getGATEWAY()) {
 
-                            new_link.incrementHopCount();
+                            new_link.increment_hop_count();
                             data.routing_table.add(new_link);
                         }
                     },
                     () -> {
-                        new_link.incrementHopCount();
+                        new_link.increment_hop_count();
                         data.routing_table.add(new_link);
                         data.gui.logMessage("Just CONNECTED: " + IPString.string_from_int(new_link.getDESTINATION()));
                     }

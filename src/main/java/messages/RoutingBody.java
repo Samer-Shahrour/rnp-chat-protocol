@@ -13,9 +13,4 @@ public class RoutingBody extends Body{
         ROUTING_TABLE = rt;
     }
 
-    @Override
-    public List<Link> get_routing_information(){
-        return ROUTING_TABLE;
-    }
-
 }

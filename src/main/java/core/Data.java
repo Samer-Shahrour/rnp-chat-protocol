@@ -26,11 +26,11 @@ public class Data {
         Arrays.fill(msg_ids, true);
     }
 
-    public String getIPString(){
+    public String get_own_IP_String(){
         return IPString.string_from_int(own_ip);
     }
 
-    public int getIPint(){
+    public int get_own_IP_int(){
         return own_ip;
     }
 

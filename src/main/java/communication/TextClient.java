@@ -9,6 +9,7 @@ import utils.IPString;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.zip.CRC32;
 
@@ -35,20 +36,22 @@ public class TextClient {
 
                     Gson gson = new Gson();
                     data.reserve_id(id);
+                    Body b = new TextBody(txt, id);
+                    String bodystring = gson.toJson(b);
+                    System.out.println(bodystring);
+                    CRC32 crc = new CRC32();
+                    crc.update(bodystring.getBytes(StandardCharsets.UTF_8));
 
                     Header h = Header.TEXTHEADER;
                     h.SIZE = (short) txt.length();
                     h.set_destination_ip(destination_ip);
-                    h.SENDER_IP = data.getIPint();
-                    CRC32 crc = new CRC32();
-                    crc.update(txt.getBytes());
-                    crc.update(id);
+                    h.SENDER_IP = data.get_own_IP_int();
                     h.CHECKSUM = (int) crc.getValue();
 
-                    Body b = new TextBody(txt, id);
                     Message m = new Message(h, b);
 
                     out.println(gson.toJson(m));
+
                     data.gui.logMessage("Sending to " + destination_ip + ":\n " +
                             " -> " + "\"" + txt + "\"" + "\n " +
                             " -> " + "id: " + id);

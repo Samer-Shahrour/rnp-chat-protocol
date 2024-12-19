@@ -59,8 +59,8 @@ public class Main {
 
 
 
-    public static void sendMessage(String message, String destinationIP) {
-        if (!destinationIP.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
+    public static void send_message(String message, String destination_IP) {
+        if (!destination_IP.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
             gui.logMessage("Invalid IP address. Please enter a valid IP address in the 'Enter IP Address' field.");
             return;
         }
@@ -70,7 +70,7 @@ public class Main {
             return;
         }
 
-        tclient.send_to(destinationIP, message);
+        tclient.send_to(destination_IP, message);
     }
 
 
@@ -80,14 +80,12 @@ public class Main {
             return;
         }
 
-        gui.logMessage("Initiating connection with " + ipAddress + "...");
+        if (ipAddress.equalsIgnoreCase(data.get_own_IP_String())) {
+            gui.logMessage("You just tried to connect to yourself?");
+            return;
+        }
+
         rclient.initiate_connection(ipAddress);
-        Link mylink = new Link(IPString.int_from_string(ipAddress),
-                IPString.int_from_string(ipAddress), 1);
-
-        routing_table.remove(mylink);
-        routing_table.add(mylink);
-
     }
 
     static void disconnect() {
@@ -96,7 +94,7 @@ public class Main {
         rclient.pause();
 
         routing_table.clear();
-        Link mylink = new Link(own_ip, own_ip, 0);
+        Link mylink = new Link(data.get_own_IP_int(), data.get_own_IP_int(), 0);
         routing_table.add(mylink);
 
         gui.logMessage("Disconnected from the network.");
@@ -119,7 +117,7 @@ public class Main {
 
     }
 
-    static void listDevices() {
+    static void list_devices() {
         gui.logMessage("Listing connected devices...");
         gui.listModel.clear();
 
@@ -142,21 +140,22 @@ public class Main {
                 gui.listModel.addElement(
                         "<html>DESTINATION: " + IPString.string_from_int(link.getDESTINATION()) + "<br>" +
                               "GATEWAY....: " + IPString.string_from_int(link.getGATEWAY()) + "<br>" +
-                              "HOPCOUNT...: " + link.getHOP_COUNT() + "<br>" +
+                              "HOP_COUNT..: " + link.getHOP_COUNT() + "<br>" +
                               "------------------------" + "</html>"
                 );
             }
         }
     }
 
-    static void exitApplication() {
+    static void exit_application() {
         gui.logMessage("Exiting application...");
 
         try {
-            Thread.sleep(1000);
+            Thread.sleep(300);
         } catch (InterruptedException _) {
 
         }
+
         System.exit(0);
     }
 }
