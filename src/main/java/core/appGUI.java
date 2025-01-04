@@ -35,8 +35,8 @@ public class appGUI {
     public void createAndShowGUI() {
         JFrame frame = new JFrame("RNP Chat, IP: " + myip);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1000, 650);
-        frame.setMinimumSize(new Dimension(1000, 650));
+        frame.setSize(870, 650);
+        frame.setMinimumSize(new Dimension(870, 650));
 
         // Set background color
         frame.getContentPane().setBackground(Color.DARK_GRAY);
@@ -125,6 +125,7 @@ public class appGUI {
 
         gbc.gridx = 1; // Column 1
         JTextField ipField = new JTextField(11);
+        ipField.setBackground(new Color(220, 220, 220));
         ipField.setFont(font.deriveFont(Font.PLAIN, 16));
         controlsPanel.add(ipField, gbc);
 
@@ -135,6 +136,7 @@ public class appGUI {
 
         gbc.gridx = 1;
         JTextField messageField = new JTextField(11);
+        messageField.setBackground(new Color(220, 220, 220));
         messageField.setFont(font.deriveFont(Font.PLAIN, 16));
         controlsPanel.add(messageField, gbc);
 
@@ -151,10 +153,10 @@ public class appGUI {
 
         JButton connectButton = createFlatButton("Connect", new Color(34, 139, 34));
         JButton sendMessageButton = createFlatButton("Send Message", new Color(30, 144, 255));
-        JButton listButton = createFlatButton("List Devices", new Color(255, 165, 0));
-        JButton disconnectButton = createFlatButton("Disconnect", new Color(220, 20, 60));
-        JButton exitButton = createFlatButton("Exit", new Color(139, 0, 0));
-        JButton clearButton = createFlatButton("Clear", new Color(169, 169, 169));
+        JButton listButton = createFlatButton("List Devices", new Color(204,170,0));
+        JButton disconnectButton = createFlatButton("Disconnect", new Color(190, 15, 30));
+        //JButton exitButton = createFlatButton("Exit", new Color(139, 0, 0));
+        JButton clearButton = createFlatButton("Clear", new Color(139, 139, 139));
 
 
         //select function
@@ -178,7 +180,6 @@ public class appGUI {
                 } else {
                     ipField.setText("please select a destination");
                 }
-
             }
         });
 
@@ -186,7 +187,7 @@ public class appGUI {
         buttonPanel.add(sendMessageButton);
         buttonPanel.add(listButton);
         buttonPanel.add(disconnectButton);
-        buttonPanel.add(exitButton);
+        //buttonPanel.add(exitButton);
         buttonPanel.add(clearButton);
 
         controlsPanel.add(buttonPanel, gbc);
@@ -204,7 +205,7 @@ public class appGUI {
         sendMessageButton.addActionListener (_ -> Main.send_message(messageField.getText().trim(), ipField.getText()));
         listButton.addActionListener        (_ -> Main.list_devices());
         disconnectButton.addActionListener  (_ -> Main.disconnect());
-        exitButton.addActionListener        (_ -> Main.exit_application());
+        //exitButton.addActionListener        (_ -> Main.exit_application());
         clearButton.addActionListener       (_ -> {
             logArea.setText("> Program started on IP: " + myip + " <\n");
             ipField.setText("");

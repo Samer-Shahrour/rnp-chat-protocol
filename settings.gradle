@@ -1,4 +1,4 @@
 rootProject.name = 'rnp-chat-protocol'
-include 'src:test:java'
-findProject(':src:test:java')?.name = 'java'
+include 'src:main:java'
+findProject(':src:main:java')?.name = 'java'
 

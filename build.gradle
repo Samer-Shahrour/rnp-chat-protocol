@@ -3,19 +3,6 @@ plugins {
     id 'application'
 }
 
-mainClassName = 'core.Main'
-
-group = 'org.example'
-version = '1.0-SNAPSHOT'
-
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java']
-        }
-    }
-}
-
 
 
 
