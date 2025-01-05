@@ -3,6 +3,17 @@ plugins {
     id 'application'
 }
 
+application {
+    mainClass = 'core.Main'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', '/core']
+        }
+    }
+}
 
 
 

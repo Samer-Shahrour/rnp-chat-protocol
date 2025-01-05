@@ -35,7 +35,7 @@ public class appGUI {
     public void createAndShowGUI() {
         JFrame frame = new JFrame("RNP Chat, IP: " + myip);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(870, 650);
+        frame.setSize(870, 600);
         frame.setMinimumSize(new Dimension(870, 650));
 
         // Set background color
@@ -44,6 +44,13 @@ public class appGUI {
         // Main Panel
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.DARK_GRAY);
+
+        //label
+        JLabel label = createStyledLabel("--- IP: " + myip + " ---");
+        label.setFont(font.deriveFont(Font.BOLD, 18));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
+
 
         // Log Area
         logArea = new JTextArea();
@@ -125,7 +132,7 @@ public class appGUI {
 
         gbc.gridx = 1; // Column 1
         JTextField ipField = new JTextField(11);
-        ipField.setBackground(new Color(220, 220, 220));
+        ipField.setBackground(new Color(230, 230, 230));
         ipField.setFont(font.deriveFont(Font.PLAIN, 16));
         controlsPanel.add(ipField, gbc);
 
@@ -136,7 +143,7 @@ public class appGUI {
 
         gbc.gridx = 1;
         JTextField messageField = new JTextField(11);
-        messageField.setBackground(new Color(220, 220, 220));
+        messageField.setBackground(new Color(230, 230, 230));
         messageField.setFont(font.deriveFont(Font.PLAIN, 16));
         controlsPanel.add(messageField, gbc);
 
@@ -193,6 +200,7 @@ public class appGUI {
         controlsPanel.add(buttonPanel, gbc);
 
         // Add Components to Main Panel
+        mainPanel.add(label, BorderLayout.NORTH);
         mainPanel.add(logScrollPane, BorderLayout.CENTER);
         mainPanel.add(listScrollPane, BorderLayout.EAST);
         mainPanel.add(controlsPanel, BorderLayout.SOUTH);
@@ -207,12 +215,11 @@ public class appGUI {
         disconnectButton.addActionListener  (_ -> Main.disconnect());
         //exitButton.addActionListener        (_ -> Main.exit_application());
         clearButton.addActionListener       (_ -> {
-            logArea.setText("> Program started on IP: " + myip + " <\n");
+            logArea.setText("");
             ipField.setText("");
             messageField.setText("");
         });
 
-        logMessage("Program started on IP: " + myip + " <");
     }
 
     private JButton createFlatButton(String text, Color bgColor) {

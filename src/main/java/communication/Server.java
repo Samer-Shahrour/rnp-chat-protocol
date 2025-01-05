@@ -51,8 +51,8 @@ public class Server implements Runnable {
             }
 
         }
-        System.out.println("SERVER SHUTTING DOWN");
 
+        //System.out.println("SERVER SHUTTING DOWN");
     }
 
     public void pause() {
@@ -70,7 +70,7 @@ public class Server implements Runnable {
         try{
             socket = new ServerSocket(data.port, 16, InetAddress.getByName(data.get_own_IP_String()));
             socket.setReuseAddress(true);
-            System.out.println("SERVER started on IP: " + data.get_own_IP_String() + " and port: " + data.port);
+            //System.out.println("SERVER started on IP: " + data.get_own_IP_String() + " and port: " + data.port);
         } catch (IOException e) {
             System.err.println("SERVER Could not create socket");
         }
@@ -161,25 +161,14 @@ public class Server implements Runnable {
 
     private void handle_text_message(JSONObject message) {
 
-        System.out.println(message);
-
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
         int checksum = message.getJSONObject("HEADER").getInt("CHECKSUM");
         int id = message.getJSONObject("BODY").getInt("MSG_ID");
         String text = message.getJSONObject("BODY").getString("TEXT");
         String bodystring = message.getJSONObject("BODY").toString();
 
-        JSONObject body = message.getJSONObject("BODY");
-        TreeMap<String, Object> sortedBody = new TreeMap<>();
-        for (String key : body.keySet()) {
-            sortedBody.put(key, body.get(key));
-        }
-        String sortedBodyString = new JSONObject(sortedBody).toString();
-        System.out.println(sortedBodyString);
-
-        System.out.println(bodystring);
         CRC32 crc = new CRC32();
-        crc.update(sortedBodyString.getBytes(StandardCharsets.UTF_8));
+        crc.update(bodystring.getBytes(StandardCharsets.UTF_8));
 
         if(checksum != ((int) crc.getValue())){
             data.gui.logMessage("-CHECKSUM MISMATCH-");
@@ -247,41 +236,42 @@ public class Server implements Runnable {
 
             Optional<Link> opt = data.routing_table.stream().filter(e -> e.getDESTINATION() == new_link.getDESTINATION()).findFirst();
             opt.ifPresentOrElse(
-                    existing_link -> {
-                        if (existing_link.getHOP_COUNT() > new_link.getHOP_COUNT() + 1) {
-                            existing_link.setGATEWAY(new_link.getGATEWAY());
-                            existing_link.setHOP_COUNT(new_link.getHOP_COUNT() + 1);
-                        }
-                        if (existing_link.getHOP_COUNT() == new_link.getHOP_COUNT() + 1 &&
-                                existing_link.getGATEWAY() != new_link.getGATEWAY()) {
+                existing_link -> {
+                    if (existing_link.getHOP_COUNT() > new_link.getHOP_COUNT() + 1) {
+                        existing_link.setGATEWAY(new_link.getGATEWAY());
+                        existing_link.setHOP_COUNT(new_link.getHOP_COUNT() + 1);
+                    }
+                    if (existing_link.getHOP_COUNT() == new_link.getHOP_COUNT() + 1 &&
+                            existing_link.getGATEWAY() != new_link.getGATEWAY()) {
 
-                            new_link.increment_hop_count();
-                            data.routing_table.add(new_link);
-                        }
-                    },
-                    () -> {
                         new_link.increment_hop_count();
                         data.routing_table.add(new_link);
-                        data.gui.logMessage("Just CONNECTED: " + IPString.string_from_int(new_link.getDESTINATION()));
                     }
+                },
+                () -> {
+                    new_link.increment_hop_count();
+                    data.routing_table.add(new_link);
+                    data.gui.logMessage("Just CONNECTED: " + IPString.string_from_int(new_link.getDESTINATION()));
+                }
             );
 
         }
 
 
+        //check if indirect connections lost
         for(Link link : data.routing_table.stream().filter(e -> e.getGATEWAY() == sender).toList()){
             boolean found = false;
-                for (int i = 0; i < rt.length(); i++) {
-                    if (rt.getJSONObject(i).getInt("DESTINATION") == link.getDESTINATION() &&
-                            rt.getJSONObject(i).getInt("HOP_COUNT") <= 16) {
-                        found = true;
-                    }
+            for (int i = 0; i < rt.length(); i++) {
+                if (rt.getJSONObject(i).getInt("DESTINATION") == link.getDESTINATION() &&
+                        rt.getJSONObject(i).getInt("HOP_COUNT") <= 16) {
+                    found = true;
                 }
+            }
 
-                if (!found) {
-                    data.routing_table.remove(link);
-                    data.gui.logMessage("Just DISCONNECTED: " + IPString.string_from_int(link.getDESTINATION()));
-                }
+            if (!found) {
+                data.routing_table.remove(link);
+                data.gui.logMessage("Just DISCONNECTED: " + IPString.string_from_int(link.getDESTINATION()));
+            }
         }
 
     }

@@ -61,7 +61,7 @@ public class Main {
 
     public static void send_message(String message, String destination_IP) {
         if (!destination_IP.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
-            gui.logMessage("Invalid IP address. Please enter a valid IP address in the 'Enter IP Address' field.");
+            gui.logMessage("Invalid IP address");
             return;
         }
 
