@@ -38,7 +38,6 @@ public class TextClient {
                     data.reserve_id(id);
                     Body b = new TextBody(txt, id);
                     String bodystring = gson.toJson(b);
-                    System.out.println(bodystring);
                     CRC32 crc = new CRC32();
                     crc.update(bodystring.getBytes(StandardCharsets.UTF_8));
 

@@ -14,7 +14,6 @@ echo "Building project using Gradle..."
 ./gradlew build # Use relative gradlew wrapper if available
 if [ $? -ne 0 ]; then
   echo "Build failed. Exiting..."
-  exit 1
 fi
 
 # Loop to open terminals

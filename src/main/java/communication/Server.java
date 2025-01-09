@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.CRC32;
@@ -104,7 +103,6 @@ public class Server implements Runnable {
     private void handle_message(JSONObject message) {
         int msg_type = message.getJSONObject("HEADER").getInt("MSG_TYPE");
         int destination = message.getJSONObject("HEADER").getInt("DESTINATION_IP");
-        int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
 
         //message for me
         if(destination == data.get_own_IP_int()){
@@ -141,23 +139,48 @@ public class Server implements Runnable {
         }
 
         //forward msg
+        forward(message);
+    }
+
+    private void forward(JSONObject message) {
+        int destination = message.getJSONObject("HEADER").getInt("DESTINATION_IP");
+        int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
+        int type = message.getJSONObject("HEADER").getInt("MSG_TYPE");
+        int id = message.getJSONObject("BODY").getInt("MSG_ID");
+
+
         Optional<Link> opt = data.routing_table.stream().filter(l -> l.getDESTINATION() == destination).findFirst();
         opt.ifPresentOrElse(
             existing_link -> {
-                data.gui.logMessage("Forwarding Message from: " + IPString.string_from_int(sender) + ", to: " + IPString.string_from_int(existing_link.getGATEWAY()));
-
-                try (Socket s = new Socket(IPString.string_from_int(existing_link.getGATEWAY()), data.port)) {
-                    PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+                try (Socket socket = new Socket()) {
+                    socket.connect(new InetSocketAddress(IPString.string_from_int(destination), data.port), 1000);
+                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     message.getJSONObject("HEADER").put("TTL", message.getJSONObject("HEADER").getInt("TTL")-1);
                     out.println(message);
+                    System.out.println(build_forward_string(existing_link, type));
+
                 } catch (IOException e) {
-                    System.err.println("SERVER Could not create socket to send message");
+                    System.err.println("In Forward: SERVER Could not create socket to send message");
+                    send_nack(sender, id);
                 }
             },
-            () -> data.gui.logMessage("No Connection to send ACK?")
-        );
 
+            () -> {
+                Optional<Link> opt2 = data.routing_table.stream().filter(l -> l.getDESTINATION() == sender).findFirst();
+                opt2.ifPresentOrElse(
+                    existing_link -> {
+                        //send nack
+                        System.err.println("Error. Received message to offline user");
+                        send_nack(sender, id);
+                    },
+                        () -> System.out.println("hallo")
+                );
+            }
+
+        );
     }
+
+
 
     private void handle_text_message(JSONObject message) {
 
@@ -241,12 +264,14 @@ public class Server implements Runnable {
                         existing_link.setGATEWAY(new_link.getGATEWAY());
                         existing_link.setHOP_COUNT(new_link.getHOP_COUNT() + 1);
                     }
+                    /*
                     if (existing_link.getHOP_COUNT() == new_link.getHOP_COUNT() + 1 &&
                             existing_link.getGATEWAY() != new_link.getGATEWAY()) {
 
                         new_link.increment_hop_count();
                         data.routing_table.add(new_link);
                     }
+                    */
                 },
                 () -> {
                     new_link.increment_hop_count();
@@ -274,6 +299,54 @@ public class Server implements Runnable {
             }
         }
 
+    }
+
+    private void send_nack(int sender, int id) {
+        System.out.println("sender ip: " + IPString.string_from_int(sender));
+        Optional<Link> link = data.routing_table.stream().filter(e -> e.getDESTINATION() == sender).findFirst();
+        link.ifPresentOrElse(
+            existing_link -> {
+
+                try (Socket s = new Socket(IPString.string_from_int(existing_link.getGATEWAY()), data.port)) {
+
+                    PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+
+                    Header h = new Header();
+                    h.MSG_TYPE = MessageTypes.NACK;
+                    h.DESTINATION_IP = sender;
+                    h.SENDER_IP = data.get_own_IP_int();
+                    NackBody b = new NackBody(id, 0);
+                    Message m = new Message(h, b);
+                    Gson gson = new Gson();
+                    System.out.println(gson.toJson(m));
+                    out.println(gson.toJson(m));
+
+                } catch (IOException e) {
+                    System.err.println("In send nack: SERVER Could not create socket to send message");
+                }
+            },
+                () -> System.out.println("No Connection to send nack?")
+        );
+    }
+
+    private String build_forward_string(Link link, int type){
+        StringBuilder sb = new StringBuilder("Forwarding");
+        switch(type){
+            case MessageTypes.TEXT_MESSAGE:
+                sb.append(" TEXT MESSAGE");
+                break;
+            case MessageTypes.ROUTING_INFORMATION:
+                sb.append(" ROUTING INFORMATION");
+                break;
+            case MessageTypes.ACK:
+                sb.append(" ACK");
+                break;
+            case MessageTypes.NACK:
+                sb.append(" NACK");
+                break;
+        }
+        sb.append(" to: ").append(IPString.string_from_int(link.getGATEWAY()));
+        return sb.toString();
     }
 
 }
