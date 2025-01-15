@@ -5,7 +5,8 @@ public class NackBody extends Body{
     int ERROR_CODE;
 
     public NackBody(int id, int error_code) {
-        this.MSG_ID = id; this.ERROR_CODE = error_code;
+        this.MSG_ID = id;
+        this.ERROR_CODE = error_code;
     }
     
 }

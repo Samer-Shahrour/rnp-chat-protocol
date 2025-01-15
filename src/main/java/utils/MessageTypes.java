@@ -1,4 +1,4 @@
-package messages;
+package utils;
 
 public class MessageTypes {
     public static final int TEXT_MESSAGE = 0;

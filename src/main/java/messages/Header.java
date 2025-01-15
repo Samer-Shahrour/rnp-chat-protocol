@@ -3,6 +3,7 @@ package messages;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import utils.IPString;
+import utils.MessageTypes;
 
 @Data
 @NoArgsConstructor

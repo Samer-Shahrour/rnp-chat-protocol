@@ -12,7 +12,9 @@ import com.google.gson.Gson;
 import core.Data;
 import messages.*;
 import org.json.*;
+import utils.ErrorTypes;
 import utils.IPString;
+import utils.MessageTypes;
 
 
 public class Server implements Runnable {
@@ -133,8 +135,9 @@ public class Server implements Runnable {
         //dead message ttl
         if(message.getJSONObject("HEADER").getInt("TTL") <= 0){
             System.out.println("SERVER " + data.get_own_IP_String() + " received Dead Message: \n");
-
-            //TODO: what to do?
+            int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
+            int id = message.getJSONObject("BODY").getInt("MSG_ID");
+            send_nack(sender, id, ErrorTypes.TTL_ERROR);
             return;
         }
 
@@ -161,7 +164,7 @@ public class Server implements Runnable {
 
                 } catch (IOException e) {
                     System.err.println("In Forward: SERVER Could not create socket to send message");
-                    send_nack(sender, id);
+                    send_nack(sender, id, ErrorTypes.DESTINATION_NOT_REACHABLE);
                 }
             },
 
@@ -171,7 +174,7 @@ public class Server implements Runnable {
                     existing_link -> {
                         //send nack
                         System.err.println("Error. Received message to offline user");
-                        send_nack(sender, id);
+                        send_nack(sender, id, ErrorTypes.DESTINATION_NOT_REACHABLE);
                     },
                         () -> System.out.println("hallo")
                 );
@@ -183,7 +186,6 @@ public class Server implements Runnable {
 
 
     private void handle_text_message(JSONObject message) {
-
         int sender = message.getJSONObject("HEADER").getInt("SENDER_IP");
         int checksum = message.getJSONObject("HEADER").getInt("CHECKSUM");
         int id = message.getJSONObject("BODY").getInt("MSG_ID");
@@ -193,11 +195,7 @@ public class Server implements Runnable {
         CRC32 crc = new CRC32();
         crc.update(bodystring.getBytes(StandardCharsets.UTF_8));
 
-        if(checksum != ((int) crc.getValue())){
-            data.gui.logMessage("-CHECKSUM MISMATCH-");
-        }
-
-        //sending ACK
+        //sending response
         Optional<Link> opt = data.routing_table.stream().filter(l -> l.getDESTINATION() == sender).findFirst();
         opt.ifPresentOrElse(
             existing_link -> {
@@ -206,24 +204,32 @@ public class Server implements Runnable {
                     PrintWriter out = new PrintWriter(s.getOutputStream(), true);
                     Gson gson = new Gson();
 
-                    Body b = new AckBody(id);
-                    String bs = gson.toJson(b);
-                    crc.reset();
-                    crc.update(bs.getBytes());
+                    if(checksum != ((int) crc.getValue())){
 
-                    Header h = Header.ACKHEADER;
-                    h.DESTINATION_IP = sender;
-                    h.SENDER_IP = data.get_own_IP_int();
-                    h.CHECKSUM = (int) crc.getValue();
+                        send_nack(sender, id, ErrorTypes.CHECKSUM_MISMATCH);
+                        data.gui.logMessage("RECEIVED MESSAGE FROM: " + IPString.string_from_int(sender) + "\n" +
+                                "  -> " + "\"" + text + "\"" + "\n" +
+                                "  -> " + "NACK sent because of checksum mismatch");
 
-                    Message m = new Message(h, b);
+                    } else {
+                        Body b = new AckBody(id);
+                        String bs = gson.toJson(b);
+                        crc.reset();
+                        crc.update(bs.getBytes());
 
-                    out.println(gson.toJson(m));
+                        Header h = Header.ACKHEADER;
+                        h.DESTINATION_IP = sender;
+                        h.SENDER_IP = data.get_own_IP_int();
+                        h.CHECKSUM = (int) crc.getValue();
 
-                    data.gui.logMessage("RECEIVED MESSAGE FROM: " + IPString.string_from_int(sender) + "\n" +
-                            "  -> " + "\"" + text + "\"" + "\n" +
-                            "  -> " + "Ack sent");
+                        Message m = new Message(h, b);
 
+                        out.println(gson.toJson(m));
+
+                        data.gui.logMessage("RECEIVED MESSAGE FROM: " + IPString.string_from_int(sender) + "\n" +
+                                "  -> " + "\"" + text + "\"" + "\n" +
+                                "  -> " + "Ack sent");
+                    }
 
                 } catch (IOException e) {
                     System.err.println("SERVER sending ack Could not create socket to send message:" + e.getMessage());
@@ -236,13 +242,37 @@ public class Server implements Runnable {
 
     private void handle_acknowledge(JSONObject message) {
         int id = message.getJSONObject("BODY").getInt("MSG_ID");
-        data.gui.logMessage("message acknowledged, id: " + id);
+        data.gui.logMessage("ACK: id: " + id);
         data.free_id(id);
     }
 
     private void handle_not_acknowledge(JSONObject message) {
         int id = message.getJSONObject("BODY").getInt("MSG_ID");
-        data.gui.logMessage("message lost, id: " + id);
+        int errorCode = message.getJSONObject("BODY").getInt("ERROR_CODE");
+        StringBuilder sb = new StringBuilder("NACK: ");
+        switch(errorCode){
+            case ErrorTypes.TTL_ERROR:
+                sb.append("TTL_ERROR, ");
+                break;
+            case ErrorTypes.DESTINATION_NOT_REACHABLE:
+                sb.append("DESTINATION_NOT_REACHABLE, ");
+                break;
+            case ErrorTypes.CHECKSUM_MISMATCH:
+                sb.append("CHECKSUM_MISMATCH, ");
+                break;
+            case ErrorTypes.INVALID_MESSAGE_FORMAT:
+                sb.append("INVALID_MESSAGE_FORMAT, ");
+                break;
+            case ErrorTypes.BODY_SIZE_EXCEEDED:
+                sb.append("BODY_SIZE_EXCEEDED, ");
+                break;
+            case ErrorTypes.OTHER:
+                sb.append("OTHER, ");
+                break;
+        }
+        sb.append("id: ").append(id);
+
+        data.gui.logMessage(sb.toString());
         data.free_id(id);
     }
 
@@ -301,8 +331,7 @@ public class Server implements Runnable {
 
     }
 
-    private void send_nack(int sender, int id) {
-        System.out.println("sender ip: " + IPString.string_from_int(sender));
+    private void send_nack(int sender, int id, int type) {
         Optional<Link> link = data.routing_table.stream().filter(e -> e.getDESTINATION() == sender).findFirst();
         link.ifPresentOrElse(
             existing_link -> {
@@ -315,10 +344,9 @@ public class Server implements Runnable {
                     h.MSG_TYPE = MessageTypes.NACK;
                     h.DESTINATION_IP = sender;
                     h.SENDER_IP = data.get_own_IP_int();
-                    NackBody b = new NackBody(id, 0);
+                    NackBody b = new NackBody(id, type);
                     Message m = new Message(h, b);
                     Gson gson = new Gson();
-                    System.out.println(gson.toJson(m));
                     out.println(gson.toJson(m));
 
                 } catch (IOException e) {
